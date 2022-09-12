@@ -82,19 +82,18 @@ new class Fullfilled {
 			quantityElement.innerText = quantity
 			priceElement.innerText = Currency(price)
 
-			const customProduct = Object.assign(product, {
+			const customProduct = {
+				...product,
 				element,
 				price
-			})
+			}
 
 			if(isFirst)
 				this.products.push(customProduct)
 			else{
-				const indexElement = element.querySelector("th")
 				const { length } = this.products
-				const index = length + 1
 
-				indexElement.innerText = index.toString()
+				element.querySelector("th").innerText = (length + 1).toString()
 				this.products[length - 1].element.after(element)
 				this.products.push(customProduct)
 			}
