@@ -14,13 +14,6 @@ import WaitForElement from "./helpers/WaitForElement.js"
 import CreateElement from "./helpers/CreateElement.js"
 import Data from "./data.js"
 
-/** @param {number} price */
-function Currency(price){
-	return (price / 100).toLocaleString("pt-BR", {
-		style: "currency",
-		currency: "BRL"
-	}).replace(String.fromCharCode(160), "")
-}
 
 async function InsertIMask(){
 	// * Redirect before loading source-map
@@ -72,17 +65,17 @@ const WaitIMask = (() => {
 })()
 
 new class Index {
-	data = Data
-	/** @type {import("../typings/index").Elements} */
-	elements
 	requiredFieldMessage = /** @type {const} */ ("Este campo é obrigatório")
+	autofillSelector = /** @type {const} */ (":-webkit-autofill")
+
+	/** @type {import("../typings/index").Elements} */ elements
+	data = Data
 
 	#showEmailError = false
 	#showCepError = false
 	#productId = 0
 
-	/** @type {HTMLDivElement} */
-	#productClone
+	/** @type {HTMLDivElement} */ #productClone
 
 	constructor(){
 		ElementsPromises.bodyLoaded.then(this.Init.bind(this))
@@ -153,15 +146,17 @@ new class Index {
 
 		this.NameListeners()
 		this.EmailListeners()
+		this.StreetListeners()
 		this.CepListeners()
 		this.ProductListeners(firstProduct)
 		this.AddProductListener()
 		this.FormListeners()
 
 		WaitIMask().then(() => {
-			IMask(this.elements.houseNumber, {
-				mask: "000000"
-			})
+			const { houseNumber } = this.elements
+			const imask = IMask(houseNumber, { mask: "000000" })
+
+			houseNumber.addEventListener("change:custom", () => imask.updateValue())
 		})
 	}
 	/**
@@ -220,12 +215,39 @@ new class Index {
 
 		return this.data.cities[0]
 	}
+	StreetListeners(){
+		const { autofillSelector, elements: { street, houseNumber, complement: complementElement } } = this
+
+		street.addEventListener("change", function(event){
+			const { value } = this
+
+			if(this.matches(autofillSelector) && value.includes(",")){
+				const [street, data] = value.split(",")
+				const { groups } = data.match(/(?<number>\d+)[ -]?(?<complement>\w)?/i)
+
+				if(groups){
+					const { number, complement } = groups
+
+					if(!number) return
+
+					this.value = street.trim()
+					houseNumber.value = number.trim()
+					houseNumber.dispatchEvent(new CustomEvent("change:custom"))
+
+					if(complement) complementElement.value = complement
+				}
+			}
+		})
+	}
 	CepListeners(){
-		const { cep: cepElement, city } = this.elements
+		const {
+			autofillSelector,
+			elements: { cep: cepElement, street, city }
+		} = this
 
 		this.RemoveInputCustomValidation(cepElement)
 
-		cepElement.addEventListener("change", event => {
+		cepElement.addEventListener("change", () => {
 			const { validity, parentElement } = cepElement
 			const value = cepElement.value = cepElement.value.trim()
 
@@ -234,6 +256,12 @@ new class Index {
 
 			if(!value) return this.RemoveSuccess(parentElement)
 			if(!validity.valid) return CallError("Insira um CEP válido")
+
+			let changeInputs = true
+
+			if(street.matches(autofillSelector) || city.matches(autofillSelector)){
+				changeInputs = false
+			}
 
 			const { cep, name } = this.selectedCity
 
@@ -250,7 +278,6 @@ new class Index {
 					erro,
 					localidade,
 					logradouro,
-					complemento,
 					bairro,
 					uf
 				} = await response.json()
@@ -259,10 +286,10 @@ new class Index {
 				if(uf !== "MG") throw "O CEP inserido pertence a outro estado"
 				if(name !== localidade) throw "O CEP não pertence à cidade selecionada"
 
-				this.elements.district.value = bairro
-				this.elements.street.value = logradouro
-
-				if(complemento) this.elements.complement.value = complemento
+				if(changeInputs){
+					this.elements.district.value = bairro
+					this.elements.street.value = logradouro
+				}
 
 				this.ToggleSuccess(parentElement, true)
 			}).catch(error => {
@@ -303,7 +330,7 @@ new class Index {
 						...imaskConfig
 					}
 
-					if(options.blocks) for(const [key, block] of Object.entries(options.blocks)){
+					if(options.blocks) for(const [, block] of Object.entries(options.blocks)){
 						if(!block.mask){
 							if(block.enum) block.mask = IMask.MaskedEnum
 							else if(block.from || block.to) block.mask = IMask.MaskedRange
@@ -368,7 +395,7 @@ new class Index {
 		})
 	}
 	/** @param {import("../typings/index").ProductElement} product */
-	ChangeSizeDatalist({ element, sizeElement, sizesDatalist }){
+	ChangeSizeDatalist({ element, sizesDatalist }){
 		const { letters, numbers } = this.data.productsSizes
 		const { sizeType } = this.GetSelectedProduct(element)
 		const { childElementCount, dataset } = sizesDatalist
@@ -480,7 +507,7 @@ new class Index {
 			name
 		})
 
-		form.addEventListener("submit", event => {
+		form.addEventListener("submit", () => {
 			const prices = this.elements.products.map(productElement => {
 				const selectedProduct = this.GetSelectedProduct(productElement.element)
 				return this.CalculateProductPrice(selectedProduct, productElement)
@@ -567,17 +594,7 @@ new class Index {
 			return cubicWeight / 1000 * pricePerTon
 		}
 
-		const weightTax = GetCubicWeightTax()
-
-		console.log("Freight:", {
-			servicePrice,
-			tollPrice,
-			insurance,
-			distancePrice,
-			weightTax
-		})
-
-		return servicePrice + tollPrice + insurance + distancePrice + weightTax
+		return servicePrice + tollPrice + insurance + distancePrice + GetCubicWeightTax()
 	}
 	/** @param {string | string[]} ceps */
 	ChangeCepPattern(ceps){
@@ -646,7 +663,8 @@ new class Index {
 			this.ToggleSuccess(parentElement, false)
 		}
 
-		if(once) SetError()
+		if(once)
+			SetError()
 		else{
 			element.setCustomValidity("")
 			element.addEventListener("invalid", () => (SetError(), SetListeners()))
@@ -699,10 +717,6 @@ new class Index {
 		const productsContainers = Array.from(productsContainer.querySelectorAll(".product"))
 
 		parentContainer ??= /** @type {HTMLDivElement} */ (productsContainers.find(container => container.contains(element)))
-
-		const product = /** @type {HTMLSelectElement} */ (parentContainer.querySelector("#product"))
-		const sizeElement = /** @type {HTMLInputElement} */ (parentContainer.querySelector("#productSize"))
-		const quantity = /** @type {HTMLInputElement} */ (parentContainer.querySelector("#quantity"))
 
 		for(const label of parentContainer.querySelectorAll("label")){
 			const id = label.htmlFor
