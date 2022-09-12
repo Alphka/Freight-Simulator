@@ -1,6 +1,13 @@
+import Redundancy from "./redundancy.js"
+
+new Redundancy({
+	styles: [
+		['[href$="bootstrap.min.css"]', "/public/styles/bootstrap.min.css"]
+	]
+})
+
 import ElementsPromises from "./helpers/ElementsPromises.js"
 import CreateElement from "./helpers/CreateElement.js"
-import Redundancy from "./redundancy.js"
 import Data from "./data.js"
 
 /** @param {number} price */
@@ -124,9 +131,3 @@ new class Fullfilled {
 		return Data.products.find(({ id }) => id === Number(productId))
 	}
 }
-
-new Redundancy({
-	styles: [
-		['[href$="bootstrap.min.css"]', "/public/styles/bootstrap.min.css"]
-	]
-})

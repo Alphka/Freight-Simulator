@@ -3,8 +3,10 @@ import CreateElement from "./helpers/CreateElement.js"
 export default class Redundancy {
 	/** @type {{ selector: string, callback: (element: Element) => any }[]} */
 	#listeners = []
-	#listenersId = 0
 	#listenersEnded = false
+
+	/** @type {Set<HTMLElement>} */
+	#emitted = new Set
 
 	/** @param {import("../typings/redundancy").Selectors} selectors */
 	constructor(selectors){
@@ -13,8 +15,8 @@ export default class Redundancy {
 		this.selectors = selectors
 		this.SetListener()
 
-		if(styles) for(const [selector, path, options] of styles) this.ReplaceElement(selector, path, "style", options)
-		if(scripts) for(const [selector, path, options] of scripts) this.ReplaceElement(selector, path, "script", options)
+		if(styles) for(const [selector, path, options] of styles) this.InsertElement(selector, path, "style", options)
+		if(scripts) for(const [selector, path, options] of scripts) this.InsertElement(selector, path, "script", options)
 
 		this.#listenersEnded = true
 	}
@@ -24,7 +26,7 @@ export default class Redundancy {
 	 * @param {"style" | "script"} type
 	 * @param {import("../typings/redundancy").ReplaceElementOptions} [options]
 	 */
-	ReplaceElement(selector, path, type, options){
+	InsertElement(selector, path, type, options){
 		this.#on(selector, element => {
 			const replace = type === "style" ? CreateElement("link", {
 				href: path,
@@ -37,30 +39,32 @@ export default class Redundancy {
 				referrerPolicy: "noreferrer"
 			})
 
+			console.log("Inserting element: %s (%s)", type, path)
+
 			element.after(replace)
 			element.remove()
 		})
 	}
 	SetListener(){
-		const allowedNodeNames = [
-			"link",
-			"style",
-			"script"
-		]
-
 		new MutationObserver((mutations, observer) => {
 			for(const mutation of mutations){
 				const elements = new Set(mutation.addedNodes).add(mutation.target)
 
 				for(const element of elements){
-					//// @ts-ignore
-					// if(allowedNodeNames.includes(element.nodeName.toLowerCase()))
-
 					if(
 						element instanceof HTMLScriptElement ||
 						element instanceof HTMLLinkElement ||
 						element instanceof HTMLStyleElement
 					) this.#emit(element)
+					else if(element instanceof HTMLHeadElement){
+						const elements = [
+							...document.querySelectorAll("script"),
+							...document.querySelectorAll("style"),
+							...document.querySelectorAll("link")
+						]
+
+						for(const element of elements) this.#emit(element)
+					}
 				}
 			}
 
@@ -86,11 +90,20 @@ export default class Redundancy {
 		})
 		else this.#listeners.push({ selector, callback })
 	}
-	/** @param {Element} element */
+	/** @param {HTMLElement} element */
 	#emit(element){
+		if(this.#emitted.has(element)) return
+
+		this.#emitted.add(element)
+
+		/** @type {Set<number>} */
+		const indexes = new Set
+
 		this.#listeners.forEach(({ selector, callback }, index) => {
 			if(element.matches(selector)){
-				this.#listeners.splice(index, 1)
+				indexes.add(index)
+
+				console.log("Setting event")
 
 				element.addEventListener("error", () => {
 					try{
@@ -101,5 +114,7 @@ export default class Redundancy {
 				})
 			}
 		})
+
+		for(const index of Array.from(indexes).reverse()) this.#listeners.splice(index, 1)
 	}
 }

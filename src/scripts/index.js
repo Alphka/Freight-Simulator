@@ -1,7 +1,17 @@
+import Redundancy from "./redundancy.js"
+
+new Redundancy({
+	styles: [
+		['[href$="bootstrap.min.css"]', "/public/styles/bootstrap.min.css"]
+	],
+	scripts: [
+		['[src$="imask"]', "/public/scripts/imask.js", { async: true }]
+	]
+})
+
 import ElementsPromises from "./helpers/ElementsPromises.js"
 import WaitForElement from "./helpers/WaitForElement.js"
 import CreateElement from "./helpers/CreateElement.js"
-import Redundancy from "./redundancy.js"
 import Data from "./data.js"
 
 /** @param {number} price */
@@ -704,14 +714,5 @@ new class Index {
 		}
 	}
 }
-
-new Redundancy({
-	styles: [
-		['[href$="bootstrap.min.css"]', "/public/styles/bootstrap.min.css"]
-	],
-	scripts: [
-		['[src$="imask"]', "/public/scripts/imask.js", { async: true }]
-	]
-})
 
 // TODO: Improve Redudancy.js "error" event checking
