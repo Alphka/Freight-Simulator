@@ -44,6 +44,7 @@ const sendFile = async (request, response, path) => {
 
 	for(const match of html.matchAll(/(?<=(?:href|src|content)=")[-?./@+:\w]+(?=")/gi)){
 		if(/^(?:https?:)\/\//i.test(match)) continue
+		if(!match.includes("/")) continue
 
 		const srcAttribute = match[0]
 		const srcPath = resolve(dirname(path), srcAttribute)
