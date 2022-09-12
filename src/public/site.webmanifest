@@ -1,0 +1,20 @@
+{
+    "name": "Simulador de Fretes",
+	"start_url": "..",
+    "icons": [
+        {
+            "src": "images/android-chrome-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "images/android-chrome-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png"
+        }
+    ],
+    "background_color": "#5271ff",
+    "theme_color": "#5271ff",
+    "display": "standalone",
+	"orientation": "any"
+}

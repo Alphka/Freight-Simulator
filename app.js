@@ -35,13 +35,16 @@ if(isDevelopment){
 }
 
 /**
+ * @param {import("express").Request} request
  * @param {import("express").Response} response
  * @param {string} path
  */
-const sendFile = async (response, path) => {
+const sendFile = async (request, response, path) => {
 	let html = await readFile(path, "utf8")
 
-	for(const match of html.matchAll(/(?<=(?:href|src)=")[-./\w]+(?=")/g)){
+	for(const match of html.matchAll(/(?<=(?:href|src|content)=")[-?./@+:\w]+(?=")/gi)){
+		if(/^(?:https?:)\/\//i.test(match)) continue
+
 		const srcAttribute = match[0]
 		const srcPath = resolve(dirname(path), srcAttribute)
 		const srcAbsolute = isAbsolute(srcPath) ? srcPath : resolve(process.cwd(), srcPath)
@@ -49,6 +52,21 @@ const sendFile = async (response, path) => {
 
 		html = html.replace(srcAttribute, relativePath.replace(sepRegex, "/"))
 	}
+
+	const canonical = "<!-- canonical -->"
+	const action = /(?<=action=")([-+/\w]+)\.html(?=")/gi
+
+	if(html.includes(canonical)){
+		try{
+			const url = new URL(request.url, `${request.protocol}://${request.hostname}`)
+			const meta = `<meta property="og:url" content="${url.origin + url.pathname}">`
+			html = html.replace(canonical, meta)
+		}catch(error){
+			// console.error(error)
+		}
+	}
+
+	if(action.test(html)) html = html.replace(action, "/$1")
 
 	const buffer = Buffer.from(html)
 
@@ -71,7 +89,7 @@ app.disable("x-powered-by")
 const indexPath = join(pages, "index.html")
 
 app.get(["/", "/index.html"], (request, response) => {
-	sendFile(response, indexPath)
+	sendFile(request, response, indexPath)
 })
 
 app.get("/:page", (request, response, next) => {
@@ -81,7 +99,7 @@ app.get("/:page", (request, response, next) => {
 	for(const extension of extensions){
 		let path = join(pages, page)
 		if(!extname(path)) path += extension
-		if(existsSync(path)) return sendFile(response, path)
+		if(existsSync(path)) return sendFile(request, response, path)
 	}
 
 	next()
