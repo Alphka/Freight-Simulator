@@ -1,0 +1,21 @@
+{
+	"extends": "../tsconfig",
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ES2022",
+		"moduleResolution": "Classic",
+		"allowJs": true,
+		"checkJs": true,
+		"noImplicitAny": false,
+		"strictNullChecks": false,
+		"strictPropertyInitialization": false,
+		"lib": [
+			"ES2022",
+			"DOM",
+			"DOM.Iterable"
+		],
+		"typeRoots": [
+			"typings"
+		]
+	}
+}

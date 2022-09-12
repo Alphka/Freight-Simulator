@@ -1,0 +1,16 @@
+{
+	"extends": "../../../tsconfig",
+	"compilerOptions": {
+		"noImplicitAny": true,
+		"strictNullChecks": true,
+		"strictPropertyInitialization": true,
+		"lib": [
+			"ES2022",
+			"DOM",
+			"DOM.Iterable"
+		],
+		"typeRoots": [],
+		"declaration": true,
+		"sourceMap": true
+	}
+}

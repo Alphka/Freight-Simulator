@@ -1,0 +1,7 @@
+:is(input, button):focus{
+	outline: none!important;
+}
+
+.form-group div{
+	margin-top: 10px;
+}
