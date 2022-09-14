@@ -90,6 +90,7 @@ export interface Data {
 		/** Box dimensions in centimeters */
 		dimensions: Dimensions<true>
 	}
+	cubageFactor: number
 }
 
 export interface Elements {

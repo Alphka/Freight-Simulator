@@ -1,6 +1,9 @@
 import { Product } from "./index"
 
-export type Products = (Product & {
-	element: HTMLTableRowElement,
-	price: number
-})[]
+export type ExtendedProduct = Product & {
+	element: HTMLTableRowElement
+	productSize: string
+	quantity: number
+}
+
+export type Products = ExtendedProduct[]

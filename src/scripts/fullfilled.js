@@ -25,12 +25,13 @@ new class Fullfilled {
 	/** @type {import("../typings/fullfilled.js").Products} */ products = new Array
 
 	constructor(){
-		ElementsPromises.bodyLoaded.then(this.Init.bind(this))
-	}
-	async Init(){
 		this.SetParams()
-		this.SetElements()
-		this.SetValues()
+		this.selectedCity = this.GetCity()
+
+		ElementsPromises.bodyLoaded.then(() => {
+			this.SetElements()
+			this.SetValues()
+		})
 	}
 	SetParams(){
 		const url = new URL(location.href)
@@ -43,11 +44,11 @@ new class Fullfilled {
 		this.productsBody = /** @type {HTMLTableSectionElement} */ (this.product.parentElement)
 		this.productClone = /** @type {HTMLTableRowElement} */ (this.product.cloneNode(true))
 
-		const [productsPrice, freightPrice, totalPrice] = this.product.nextElementSibling.querySelectorAll(":scope > td p")
+		const [productsPrice, freightPrice, totalPrice] = /** @type {NodeListOf<HTMLDivElement>} */ (document.querySelectorAll("#prices > div"))
 
-		this.productsPrice = productsPrice
-		this.freightPrice = freightPrice
-		this.totalPrice = totalPrice
+		this.productsPriceElement = productsPrice
+		this.freightPriceElement = freightPrice
+		this.totalPriceElement = totalPrice
 	}
 	SetValues(){
 		/** @type {NodeListOf<HTMLTableCellElement>} */
@@ -58,7 +59,7 @@ new class Fullfilled {
 
 			switch(id){
 				case "city":
-					element.innerText = this.GetCity().name
+					element.innerText = this.selectedCity.name
 				break
 				default: {
 					/** @type {false | string} */
@@ -69,16 +70,32 @@ new class Fullfilled {
 			}
 		})
 
+		this.AddProducts()
+		this.CalculateProductsPrice()
+		this.CalculateFreight()
+
+		this.AddPrice(this.productsPriceElement, "Preço dos produtos:", this.productsPrice)
+		this.AddFreight()
+		this.AddPrice(this.totalPriceElement, "Preço total:", this.productsPrice + this.freightPrice)
+	}
+	AddProducts(){
 		const productParams = this.params.getAll("product")
 		const sizeParams = this.params.getAll("productSize")
 		const quantityParams = this.params.getAll("quantity")
 
-		for(let i = 0; i < productParams.length; i++){
+		// If lengths are not equal
+		if((productParams.length + sizeParams.length + quantityParams.length) / 3 % 1 !== 0){
+			throw new Error("Invalid length sizes")
+		}
+
+		const { length } = productParams
+
+		for(let i = 0; i < length; i++){
 			const productId = productParams[i]
 			const productSize = sizeParams[i]
-			const quantity = quantityParams[i]
+			const quantity = Number(quantityParams[i])
 			const product = this.GetProduct(productId)
-			const price = product.price * Number(quantity)
+			const price = product.price * quantity
 			const isFirst = i === 0
 
 			const element = isFirst ? this.product : /** @type {HTMLTableRowElement} */ (this.productClone.cloneNode(true))
@@ -86,13 +103,15 @@ new class Fullfilled {
 
 			productElement.innerText = product.name
 			sizeElement.innerText = productSize
-			quantityElement.innerText = quantity
+			quantityElement.innerText = quantity.toString()
 			priceElement.innerText = Currency(price)
 
 			const customProduct = {
 				...product,
 				element,
-				price
+				price,
+				productSize,
+				quantity
 			}
 
 			if(isFirst)
@@ -105,23 +124,127 @@ new class Fullfilled {
 				this.products.push(customProduct)
 			}
 		}
+	}
+	/**
+	 * @param {Element} element
+	 * @param {string} label
+	 * @param {number} price
+	 */
+	AddPrice(element, label, price){
+		const table = CreateElement("table", {
+			class: "table table-condensed",
+			children: [CreateElement("tbody", {
+				children: [CreateElement("tr", {
+					children: [
+						CreateElement("th", {
+							scope: "row",
+							innerText: label
+						}),
+						CreateElement("td", {
+							innerText: Currency(price)
+						})
+					]
+				})]
+			})]
+		})
 
-		const productsPrice = this.products.reduce((a, b) => b.price + a, 0)
-		const freightPrice = Number(this.params.get("freight"))
+		element.appendChild(table)
+	}
+	AddFreight(){
+		let tbody
 
-		/**
-		 * @param {Element} element
-		 * @param {string} label
-		 * @param {number} price
-		 */
-		const addPrice = (element, label, price) => {
-			element.appendChild(CreateElement("strong", { innerText: label }))
-			element.appendChild(new Text(` ${Currency(price)}`))
+		const freightData = /** @type {const} */ ([
+			["Custo por distância", Currency(this.distancePrice)],
+			["Custo pelo seguro", Currency(this.insurancePrice)],
+			["Custo pelo pedágio", Currency(this.tollPrice)],
+			["Cubagem", Currency(this.cubagePrice)],
+			["Total", Currency(this.freightPrice)],
+		])
+
+		const table = CreateElement("table", {
+			class: "table table-condensed",
+			children: [
+				CreateElement("thead", {
+					children: [CreateElement("tr", {
+						children: [CreateElement("th", {
+							colspan: "2",
+							innerText: "Frete"
+						})]
+					})]
+				}),
+				tbody = CreateElement("tbody")
+			]
+		})
+
+		for(const [label, price] of freightData){
+			const row = CreateElement("tr", {
+				children: [
+					CreateElement("th", { innerText: label }),
+					CreateElement("td", { innerText: price })
+				]
+			})
+
+			tbody.appendChild(row)
 		}
 
-		addPrice(this.productsPrice, "Preço dos produtos:", productsPrice)
-		addPrice(this.freightPrice, "Frete:", freightPrice)
-		addPrice(this.totalPrice, "Preço total:", productsPrice + freightPrice)
+		this.freightPriceElement.appendChild(table)
+	}
+	CalculateProductsPrice(){
+		this.productsPrice = 0
+
+		for(const { price, quantity } of this.products){
+			this.productsPrice += price * quantity
+		}
+	}
+	CalculateFreight(){
+		const { freightPrice, freightMinimumPrice } = Data
+		const { toll, distance } = this.selectedCity
+		const distancePrice = freightPrice * distance / 1000
+		const insurance = 0.3 * this.productsPrice
+
+		let tollPrice = toll?.price ?? 0
+		let servicePrice = freightMinimumPrice
+
+		const GetCubicWeightTax = () => {
+			const { pricePerTon, dimensions: { cubicSpace: truckCubicSpace } } = Data.truck
+
+			let cubicSpace = 0, cubicWeight = 0
+
+			this.products.forEach(({ sizeType, quantity, productSize }) => {
+				const { letters, numbers } = Data.productsSizes
+				const size = sizeType === "letter" ? productSize : Number(productSize)
+
+				/** @type {{ width: number, height: number }} */
+				let dimensions
+
+				if(typeof size === "string" && size in letters) dimensions = letters[/** @type {keyof typeof letters} */ (size)]
+				else if(typeof size === "number" && size in numbers) dimensions = numbers[size]
+				else throw new Error("Invalid size")
+
+				const volume = dimensions.width * dimensions.height
+
+				cubicSpace += volume
+				cubicWeight += volume / Data.cubageFactor * quantity
+			})
+
+			// If it takes more than one truck
+			if(cubicSpace > truckCubicSpace){
+				const quantity = Math.ceil(cubicSpace / truckCubicSpace)
+				servicePrice *= quantity
+				tollPrice *= quantity
+			}
+
+			// (kg/m³) * (BRL/kg) = BRL
+			return cubicWeight * pricePerTon / 1000
+		}
+
+		this.distancePrice = distancePrice
+		this.insurancePrice = insurance
+
+		const cubagePrice = this.cubagePrice = GetCubicWeightTax()
+
+		this.tollPrice = tollPrice
+		this.freightPrice = servicePrice + tollPrice + insurance + distancePrice + cubagePrice
 	}
 	GetCity(){
 		return Data.cities.find(({ id }) => id === Number(this.params.get("city")))

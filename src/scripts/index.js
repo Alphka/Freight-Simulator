@@ -150,7 +150,6 @@ new class Index {
 		this.CepListeners()
 		this.ProductListeners(firstProduct)
 		this.AddProductListener()
-		this.FormListeners()
 
 		WaitIMask().then(() => {
 			const { houseNumber } = this.elements
@@ -493,108 +492,6 @@ new class Index {
 		products.push(product)
 
 		this.#productId++
-	}
-	FormListeners(){
-		const { form } = this.elements
-
-		/**
-		 * @param {string} name
-		 * @param {any} value
-		 */
-		const hiddenInput = (name, value) => CreateElement("input", {
-			type: "hidden",
-			value,
-			name
-		})
-
-		form.addEventListener("submit", () => {
-			const prices = this.elements.products.map(productElement => {
-				const selectedProduct = this.GetSelectedProduct(productElement.element)
-				return this.CalculateProductPrice(selectedProduct, productElement)
-			})
-
-			const price = prices.length === 1 ? prices[0] : prices.reduce((a, b) => a + b, 0)
-			const freight = this.CalculateFreight(price)
-
-			form.appendChild(hiddenInput("price", price))
-			form.appendChild(hiddenInput("freight", freight))
-
-			return true
-		})
-	}
-	/**
-	 * @param {import("../typings/index").Product} product
-	 * @param {import("../typings/index").ProductElement} productElementData
-	*/
-	CalculateProductPrice({ price, name }, { quantityElement }){
-		const quantity = Number(quantityElement.value)
-
-		console.log("Product:", {
-			name,
-			price,
-			quantity
-		})
-
-		return price * quantity
-	}
-	/** @param {number} price */
-	CalculateFreight(price){
-		const { selectedCity: { toll, distance }, data: { freightPrice, freightMinimumPrice } } = this
-		const distancePrice = freightPrice * distance / 1000
-		const insurance = 0.3 * price
-
-		let tollPrice = toll?.price ?? 0
-		let servicePrice = freightMinimumPrice
-
-		const GetCubicWeightTax = () => {
-			const { capacity, pricePerTon, dimensions: { cubicSpace: truckCubicSpace } } = this.data.truck
-
-			const products = this.elements.products.map(({ element, sizeElement, quantityElement }) => {
-				const selectedProduct = this.GetSelectedProduct(element)
-				const size = sizeElement.value.trim()
-				const quantity = Number(quantityElement.value.trim())
-
-				return {
-					product: selectedProduct,
-					size: selectedProduct.sizeType === "letter" ? size : Number(size),
-					quantity
-				}
-			})
-
-			let cubicSpace = 0
-
-			products.forEach(({ size, quantity }) => {
-				const { letters, numbers } = this.data.productsSizes
-
-				/** @type {{ width: number, height: number }} */
-				let dimensions
-
-				if(typeof size === "string" && size in letters) dimensions = letters[/** @type {keyof typeof letters} */ (size)]
-				else if(typeof size === "number" && size in numbers) dimensions = numbers[size]
-				else{ // Custom sizes
-					const { quantity: boxQuantity, dimensions: { cubicSpace } } = this.data.boxDefault
-					if(quantity <= boxQuantity) return cubicSpace
-					else return cubicSpace * Math.ceil(quantity / boxQuantity)
-				}
-
-				cubicSpace += dimensions.width * dimensions.height * quantity
-			})
-
-			// If it takes more than one truck
-			if(cubicSpace > truckCubicSpace){
-				const quantity = Math.ceil(cubicSpace / truckCubicSpace)
-				servicePrice *= quantity
-				tollPrice *= quantity
-			}
-
-			// (kg/cm³) * cm³ = kg
-			const cubicWeight = capacity / truckCubicSpace * cubicSpace
-
-			// ton * (BRL/ton) = BRL
-			return cubicWeight / 1000 * pricePerTon
-		}
-
-		return servicePrice + tollPrice + insurance + distancePrice + GetCubicWeightTax()
 	}
 	/** @param {string | string[]} ceps */
 	ChangeCepPattern(ceps){

@@ -154,5 +154,6 @@ export default {
 				return this.length * this.width * this.height
 			}
 		}
-	}
+	},
+	cubageFactor: 300
 }
