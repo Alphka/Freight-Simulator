@@ -23,6 +23,7 @@ new class Fullfilled {
 	/** @type {HTMLTableElement} */ productsTable
 	/** @type {HTMLTableRowElement} */ product
 	/** @type {import("../typings/fullfilled.js").Products} */ products = new Array
+	productsPrice = 0
 
 	constructor(){
 		this.SetParams()
@@ -38,17 +39,12 @@ new class Fullfilled {
 		this.params = url.searchParams
 	}
 	SetElements(){
-		this.addressTable = document.querySelector("table#address")
-		this.productsTable = document.querySelector("table#products")
+		this.addressTable = /** @type {HTMLTableElement} */ (document.querySelector("table#address"))
+		this.productsTable = /** @type {HTMLTableElement} */ (document.querySelector("table#products"))
+		this.pricesTable = /** @type {HTMLTableElement} */ (document.querySelector("table#prices"))
 		this.product = document.querySelector(".product")
 		this.productsBody = /** @type {HTMLTableSectionElement} */ (this.product.parentElement)
 		this.productClone = /** @type {HTMLTableRowElement} */ (this.product.cloneNode(true))
-
-		const [productsPrice, freightPrice, totalPrice] = /** @type {NodeListOf<HTMLDivElement>} */ (document.querySelectorAll("#prices > div"))
-
-		this.productsPriceElement = productsPrice
-		this.freightPriceElement = freightPrice
-		this.totalPriceElement = totalPrice
 	}
 	SetValues(){
 		/** @type {NodeListOf<HTMLTableCellElement>} */
@@ -74,9 +70,9 @@ new class Fullfilled {
 		this.CalculateProductsPrice()
 		this.CalculateFreight()
 
-		this.AddPrice(this.productsPriceElement, "Preço dos produtos:", this.productsPrice)
+		this.AddPrice("Preço dos produtos:", this.productsPrice)
 		this.AddFreight()
-		this.AddPrice(this.totalPriceElement, "Preço total:", this.productsPrice + this.freightPrice)
+		this.AddPrice("Preço total:", this.productsPrice + this.freightPrice)
 	}
 	AddProducts(){
 		const productParams = this.params.getAll("product")
@@ -126,75 +122,79 @@ new class Fullfilled {
 		}
 	}
 	/**
-	 * @param {Element} element
 	 * @param {string} label
 	 * @param {number} price
 	 */
-	AddPrice(element, label, price){
-		const table = CreateElement("table", {
-			class: "table table-condensed",
-			children: [CreateElement("tbody", {
-				children: [CreateElement("tr", {
-					children: [
-						CreateElement("th", {
-							scope: "row",
-							innerText: label
-						}),
-						CreateElement("td", {
-							innerText: Currency(price)
-						})
-					]
-				})]
-			})]
-		})
-
-		element.appendChild(table)
-	}
-	AddFreight(){
-		let tbody
-
-		const freightData = /** @type {const} */ ([
-			["Custo por distância", Currency(this.distancePrice)],
-			["Custo pelo seguro", Currency(this.insurancePrice)],
-			["Custo pelo pedágio", Currency(this.tollPrice)],
-			["Cubagem", Currency(this.cubagePrice)],
-			["Total", Currency(this.freightPrice)],
-		])
-
-		const table = CreateElement("table", {
-			class: "table table-condensed",
+	AddPrice(label, price){
+		const tbody = this.pricesTable.tBodies[0]
+		const row = CreateElement("tr", {
 			children: [
-				CreateElement("thead", {
-					children: [CreateElement("tr", {
-						children: [CreateElement("th", {
-							colspan: "2",
-							innerText: "Frete"
-						})]
-					})]
+				CreateElement("th", {
+					scope: "row",
+					innerText: label
 				}),
-				tbody = CreateElement("tbody")
+				CreateElement("td", {
+					class: "text-right",
+					colspan: 2,
+					innerText: Currency(price)
+				})
 			]
 		})
 
-		for(const [label, price] of freightData){
-			const row = CreateElement("tr", {
+		tbody.appendChild(row)
+	}
+	AddFreight(){
+		const tbody = this.pricesTable.tBodies[0]
+
+		const freightData = /** @type {const} */ ([
+			["Custo por distância", this.distancePrice],
+			["Custo pelo seguro", this.insurancePrice],
+			["Custo pelo pedágio", this.tollPrice],
+			["Cubagem", this.cubagePrice],
+			["Total", this.freightPrice],
+		])
+
+		let label
+		const rows = [
+			CreateElement("tr", {
 				children: [
-					CreateElement("th", { innerText: label }),
-					CreateElement("td", { innerText: price })
+					label = CreateElement("th", {
+						scope: "row",
+						innerText: "Frete"
+					})
 				]
 			})
+		]
 
-			tbody.appendChild(row)
+		let firstRowAdded = false
+
+		for(const [label, price] of freightData){
+			const head = CreateElement("th", {
+				class: "text-right",
+				scope: "row",
+				innerText: label + ": "
+			}), cell = CreateElement("td", {
+				class: "text-right",
+				innerText: Currency(price)
+			})
+
+			if(!firstRowAdded){
+				const row = rows[0]
+				row.appendChild(head)
+				row.appendChild(cell)
+				firstRowAdded = true
+				continue
+			}
+
+			rows.push(CreateElement("tr", { children: [head, cell] }))
 		}
 
-		this.freightPriceElement.appendChild(table)
+		label.rowSpan = rows.length
+
+		for(const row of rows) tbody.appendChild(row)
 	}
 	CalculateProductsPrice(){
-		this.productsPrice = 0
-
-		for(const { price, quantity } of this.products){
-			this.productsPrice += price * quantity
-		}
+		for(const { price, quantity } of this.products) this.productsPrice += price
 	}
 	CalculateFreight(){
 		const { freightPrice, freightMinimumPrice } = Data
