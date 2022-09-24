@@ -1,7 +1,8 @@
 const { join, extname, resolve, sep, isAbsolute, relative, dirname } = require("path")
+const { readFile, stat } = require("fs/promises")
 const { createServer } = require("http")
 const { existsSync } = require("fs")
-const { readFile, stat } = require("fs/promises")
+const { URL } = require("url")
 const express = require("express")
 const app = express()
 const server = createServer(app)
@@ -59,7 +60,8 @@ const sendFile = async (request, response, path) => {
 
 	if(html.includes(canonical)){
 		try{
-			const url = new URL(request.url, `${request.protocol}://${request.hostname}`)
+			const protocol = request.header("x-forwarded-proto") ?? request.protocol
+			const url = new URL(request.url, `${protocol}://${request.hostname}`)
 			const meta = `<meta property="og:url" content="${url.origin + url.pathname}">`
 			html = html.replace(canonical, meta)
 		}catch(error){
