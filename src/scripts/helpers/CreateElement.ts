@@ -46,14 +46,6 @@ function CreateElement(){
 		default: throw new Error(`args cannot be a type of ${typeof arguments[0]}`)
 	}
 
-	const specialAttributes = [
-		"textContent",
-		"innerText",
-		"innerHTML",
-		"className",
-		"crossOrigin"
-	] as const
-
 	if(options.children){
 		options.children.forEach(child => element.appendChild(child))
 		delete options.children
@@ -61,7 +53,7 @@ function CreateElement(){
 
 	for(const [attribute, value] of Object.entries(options)){
 		// @ts-ignore
-		if(typeof value === "boolean" || specialAttributes.includes(attribute)) element[attribute] = value, delete options[attribute]
+		if(typeof value === "boolean" || attribute in element) element[attribute] = value, delete options[attribute]
 		else element.setAttribute(attribute, value)
 	}
 
