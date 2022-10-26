@@ -1,25 +1,17 @@
-import Redundancy from "./redundancy.js"
-
-new Redundancy({
-	styles: [
-		['[href$="bootstrap.min.css"]', "/public/styles/bootstrap.min.css"]
-	],
-	scripts: [
-		['[src$="imask"]', "/public/scripts/imask.js", { async: true }]
-	]
-})
-
+import type { Elements, ProductElement } from "../typings/index"
 import ElementsPromises from "./helpers/ElementsPromises.js"
 import WaitForElement from "./helpers/WaitForElement.js"
 import CreateElement from "./helpers/CreateElement.js"
 import Data from "./data.js"
 
-
 async function InsertIMask(){
 	// * Redirect before loading source-map
 	const response = await fetch("https://unpkg.com/imask", {
+		mode: "cors",
 		method: "head",
-		redirect: "follow"
+		redirect: "follow",
+		referrerPolicy: "no-referrer",
+		cache: "force-cache"
 	})
 
 	if(!response.ok) throw new Error("Error during IMask request")
@@ -33,10 +25,7 @@ async function InsertIMask(){
 }
 
 const WaitIMask = (() => {
-	/** @type {(value?: any) => void} */
-	let resolve,
-	/** @type {(reason?: any) => void} */
-	reject
+	let resolve: (value?: any) => void, reject: (reason?: any) => void
 
 	const promise = new Promise((res, rej) => {
 		resolve = res
@@ -65,22 +54,22 @@ const WaitIMask = (() => {
 })()
 
 new class Index {
-	requiredFieldMessage = /** @type {const} */ ("Este campo é obrigatório")
-	autofillSelector = /** @type {const} */ (":-webkit-autofill")
+	private requiredFieldMessage = "Este campo é obrigatório" as const
+	private autofillSelector = ":-webkit-autofill" as const
 
-	/** @type {import("../typings/index").Elements} */ elements
-	data = Data
+	private elements!: Elements
+	private data = Data
 
 	#showEmailError = false
 	#showCepError = false
 	#productId = 0
-
-	/** @type {HTMLDivElement} */ #productClone
+	#productClone!: HTMLDivElement
 
 	constructor(){
-		ElementsPromises.bodyLoaded.then(this.Init.bind(this))
+		this.Init()
 	}
-	async Init(){
+	private async Init(){
+		await ElementsPromises.bodyLoaded
 		await this.SetElements()
 
 		const { clientName, email, city: cityElement, products: [ productElement ] } = this.elements
@@ -101,47 +90,46 @@ new class Index {
 		this.SetSizePattern(productElement)
 		this.ChangeSizeDatalist(productElement)
 		this.SetSizePattern(productElement)
-		this.ChangeCepPattern(this.selectedCity.cep)
+		this.ChangeCepPattern(this.selectedCity!.cep)
 
 		this.#productId++
 	}
-	async SetElements(){
+	private async SetElements(){
 		const form = await WaitForElement("form")
-		const product = /** @type {HTMLSelectElement} */ (form.querySelector("select#product"))
-		const productsContainer = Array.from(document.querySelectorAll("fieldset")).find(e => e.contains(product))
-		const productContainer = /** @type {HTMLDivElement} */ (productsContainer.querySelector(".product"))
+		const product = form.querySelector("select#product") as HTMLSelectElement
+		const productsContainer = Array.from(document.querySelectorAll("fieldset")).find(element => element.contains(product))!
+		const productContainer = productsContainer.querySelector(".product") as HTMLDivElement
 
 		this.elements = {
 			form,
-			clientName: form.querySelector("input#name"),
-			email: form.querySelector("input#email"),
-			city: form.querySelector("select#city"),
-			cep: form.querySelector("input#cep"),
-			district: form.querySelector("input#district"),
-			street: form.querySelector("input#street"),
-			houseNumber: form.querySelector("input#houseNumber"),
-			complement: form.querySelector("input#complement"),
+			clientName: form.querySelector("input#name") as HTMLInputElement,
+			email: form.querySelector("input#email") as HTMLInputElement,
+			city: form.querySelector("select#city") as HTMLSelectElement,
+			cep: form.querySelector("input#cep") as HTMLInputElement,
+			district: form.querySelector("input#district") as HTMLInputElement,
+			street: form.querySelector("input#street") as HTMLInputElement,
+			houseNumber: form.querySelector("input#houseNumber") as HTMLInputElement,
+			complement: form.querySelector("input#complement") as HTMLInputElement,
 			productsContainer,
 			products: [
 				{
 					container: productContainer,
 					element: product,
-					sizeElement: productContainer.querySelector("input#productSize"),
-					quantityElement: productContainer.querySelector("input#quantity"),
-					sizesDatalist: productContainer.querySelector("datalist")
+					sizeElement: productContainer.querySelector("input#productSize") as HTMLInputElement,
+					quantityElement: productContainer.querySelector("input#quantity") as HTMLInputElement,
+					sizesDatalist: productContainer.querySelector("datalist")!
 				}
 			],
-			addProduct: form.querySelector("input#addProduct")
+			addProduct: form.querySelector("input#addProduct") as HTMLInputElement
 		}
 	}
-	/** @param {import("../typings/index").ProductElement["container"]} productContainer */
-	CloneNode(productContainer){
+	private CloneNode(productContainer: ProductElement["container"]){
 		const { products } = this.elements
 
-		this.#productClone = /** @type {HTMLDivElement} */ (productContainer.cloneNode(true))
+		this.#productClone = productContainer.cloneNode(true) as HTMLDivElement
 		this.ChangeProductIds(products[0])
 	}
-	AddEventListeners(){
+	private AddEventListeners(){
 		const [firstProduct] = this.elements.products
 
 		this.NameListeners()
@@ -158,11 +146,7 @@ new class Index {
 			houseNumber.addEventListener("change:custom", () => imask.updateValue())
 		})
 	}
-	/**
-	 * @param {HTMLElement} element
-	 * @param {boolean} valid
-	 */
-	ToggleSuccess(element, valid){
+	private ToggleSuccess(element: HTMLElement, valid: boolean){
 		if(valid){
 			if(!element.classList.contains("has-success")) element.classList.add("has-success")
 			if(element.classList.contains("has-error")) element.classList.remove("has-error")
@@ -171,12 +155,11 @@ new class Index {
 			if(element.classList.contains("has-success")) element.classList.remove("has-success")
 		}
 	}
-	/** @param {HTMLElement} element */
-	RemoveSuccess(element){
+	private RemoveSuccess(element: HTMLElement){
 		if(element.classList.contains("has-error")) element.classList.remove("has-error")
 		if(element.classList.contains("has-success")) element.classList.remove("has-success")
 	}
-	NameListeners(){
+	private NameListeners(){
 		const { elements: { clientName } } = this
 
 		clientName.addEventListener("change", () => {
@@ -186,24 +169,24 @@ new class Index {
 
 			// If not empty
 			if(validity.valid){
-				if(valid) this.ToggleSuccess(parentElement, true)
+				if(valid) this.ToggleSuccess(parentElement!, true)
 				else clientName.dispatchEvent(new Event("invalid"))
-			}else this.ToggleSuccess(parentElement, false)
+			}else this.ToggleSuccess(parentElement!, false)
 		})
 	}
-	EmailListeners(){
+	private EmailListeners(){
 		const { elements: { email } } = this
 
 		email.addEventListener("input", () => {
 			const { validity: { valid }, parentElement } = email
 			if(!this.#showEmailError && email.value.includes("@")) this.#showEmailError = true
-			if(this.#showEmailError) this.ToggleSuccess(parentElement, valid)
+			if(this.#showEmailError) this.ToggleSuccess(parentElement!, valid)
 		})
 
 		email.addEventListener("change", () => {
 			const { validity: { valid }, parentElement } = email
 			if(!this.#showEmailError) this.#showEmailError = true
-			this.ToggleSuccess(parentElement, valid)
+			this.ToggleSuccess(parentElement!, valid)
 		})
 	}
 	get selectedCity(){
@@ -214,7 +197,7 @@ new class Index {
 
 		return this.data.cities[0]
 	}
-	StreetListeners(){
+	private StreetListeners(){
 		const { autofillSelector, elements: { street, houseNumber, complement: complementElement } } = this
 
 		street.addEventListener("change", function(event){
@@ -222,7 +205,7 @@ new class Index {
 
 			if(this.matches(autofillSelector) && value.includes(",")){
 				const [street, data] = value.split(",")
-				const { groups } = data.match(/(?<number>\d+)[ -]?(?<complement>\w)?/i)
+				const { groups } = data.match(/(?<number>\d+)[ -]?(?<complement>\w)?/i)!
 
 				if(groups){
 					const { number, complement } = groups
@@ -238,7 +221,7 @@ new class Index {
 			}
 		})
 	}
-	CepListeners(){
+	private CepListeners(){
 		const {
 			autofillSelector,
 			elements: { cep: cepElement, street, city }
@@ -251,9 +234,9 @@ new class Index {
 			const value = cepElement.value = cepElement.value.trim()
 
 			/** @param {string} [message] */
-			const CallError = message => this.DisplayError(cepElement, message, parentElement, true)
+			const CallError = (message: string) => this.DisplayError(cepElement, message, parentElement!, true)
 
-			if(!value) return this.RemoveSuccess(parentElement)
+			if(!value) return this.RemoveSuccess(parentElement!)
 			if(!validity.valid) return CallError("Insira um CEP válido")
 
 			let changeInputs = true
@@ -262,7 +245,7 @@ new class Index {
 				changeInputs = false
 			}
 
-			const { cep, name } = this.selectedCity
+			const { cep, name } = this.selectedCity!
 
 			if(typeof cep === "string") return fetch(`https://viacep.com.br/ws/${value}/json/`, {
 				headers: { Accept: "application/json" },
@@ -290,7 +273,7 @@ new class Index {
 					this.elements.street.value = logradouro
 				}
 
-				this.ToggleSuccess(parentElement, true)
+				this.ToggleSuccess(parentElement!, true)
 			}).catch(error => {
 				const errorType = typeof error
 
@@ -307,21 +290,24 @@ new class Index {
 		WaitIMask().then(() => {
 			const config = { lazy: false }
 
+			// @ts-ignore
 			let imask = IMask(cepElement, {
 				...config,
-				...this.selectedCity.imaskConfig ?? {}
+				...this.selectedCity!.imaskConfig ?? {}
 			})
 
 			city.addEventListener("change", () => {
+				const { selectedCity } = this
+
 				imask.destroy()
 
 				cepElement.value = ""
 				cepElement.setCustomValidity("")
 
-				this.ChangeCepPattern(this.selectedCity.cep)
-				this.RemoveSuccess(cepElement.parentElement)
+				this.ChangeCepPattern(selectedCity!.cep)
+				this.RemoveSuccess(cepElement.parentElement!)
 
-				const { imaskConfig } = this.selectedCity
+				const { imaskConfig } = selectedCity!
 
 				if(imaskConfig){
 					const options = {
@@ -336,10 +322,9 @@ new class Index {
 						}
 					}
 
-					console.log(imask, options)
-
-					imask = IMask(cepElement, options), console.log(imask, imask.mask)
-				}else console.log(imask)
+					// @ts-ignore
+					imask = IMask(cepElement, options)
+				}
 			})
 		}).finally(() => {
 			// * Analyse input after IMask change input's value
@@ -350,20 +335,20 @@ new class Index {
 				if(value){
 					if(!this.#showCepError){
 						if(value.includes("-")) this.#showCepError = true
-						else this.RemoveSuccess(parentElement)
-					}else this.ToggleSuccess(parentElement, this.IsValid(validity))
-				}else this.RemoveSuccess(parentElement)
+						else this.RemoveSuccess(parentElement!)
+					}else this.ToggleSuccess(parentElement!, this.IsValid(validity))
+				}else this.RemoveSuccess(parentElement!)
 			})
 
 			cepElement.addEventListener("invalid", () => {
 				const value = cepElement.value.trim()
-				if(!value) this.DisplayError(cepElement, this.requiredFieldMessage, cepElement.parentElement, true)
+				if(!value) this.DisplayError(cepElement, this.requiredFieldMessage, cepElement.parentElement!, true)
 				if(!this.#showCepError) this.#showCepError = true
 			})
 		})
 	}
 	/** @param {HTMLInputElement} input */
-	RemoveInputCustomValidation(input){
+	private RemoveInputCustomValidation(input: HTMLInputElement){
 		input.addEventListener("input", () => {
 			const { validity, parentElement } = input
 			let { valid } = validity
@@ -381,7 +366,7 @@ new class Index {
 				input.removeAttribute("aria-errormessage")
 			}
 
-			this.ToggleSuccess(parentElement, valid)
+			this.ToggleSuccess(parentElement!, valid)
 		})
 
 		input.addEventListener("change", () => {
@@ -389,31 +374,30 @@ new class Index {
 
 			if(validity.customError){
 				input.setCustomValidity("")
-				this.ToggleSuccess(parentElement, validity.valid)
+				this.ToggleSuccess(parentElement!, validity.valid)
 			}
 		})
 	}
-	/** @param {import("../typings/index").ProductElement} product */
-	ChangeSizeDatalist({ element, sizesDatalist }){
+	/** @param {ProductElement} product */
+	private ChangeSizeDatalist({ element, sizesDatalist }: ProductElement){
 		const { letters, numbers } = this.data.productsSizes
-		const { sizeType } = this.GetSelectedProduct(element)
+		const { sizeType } = this.GetSelectedProduct(element)!
 		const { childElementCount, dataset } = sizesDatalist
 
 		if(dataset.type && dataset.type === sizeType) return
 		if(childElementCount) for(const child of [...sizesDatalist.children]) child.remove()
 
-		/** @type {typeof letters | typeof numbers} */
-		let object
+		let object: typeof letters | typeof numbers
 
 		if(sizeType === "letter") object = letters
-		if(sizeType === "number") object = numbers
+		else object = numbers
 
 		for(const key in object) this.AddOption(sizesDatalist, key)
 
 		dataset.type = sizeType
 	}
-	/** @param {import("../typings/index").ProductElement} product */
-	ProductListeners(product){
+	/** @param {ProductElement} product */
+	private ProductListeners(product: ProductElement){
 		const { element, sizeElement } = product
 		const { letters, numbers } = this.data.productsSizes
 
@@ -423,8 +407,8 @@ new class Index {
 			this.SetSizePattern(product)
 			this.ChangeSizeDatalist(product)
 
-			if(sizeElement.validity.valueMissing) this.RemoveSuccess(sizeElement.parentElement)
-			else this.ToggleSuccess(sizeElement.parentElement, sizeElement.checkValidity())
+			if(sizeElement.validity.valueMissing) this.RemoveSuccess(sizeElement.parentElement!)
+			else this.ToggleSuccess(sizeElement.parentElement!, sizeElement.checkValidity())
 		})
 
 		const ValidateSize = () => {
@@ -433,7 +417,7 @@ new class Index {
 			const { value, parentElement } = sizeElement
 
 			/** @param {string} [message] */
-			const CallError = message => this.DisplayError(sizeElement, message, parentElement, true)
+			const CallError = (message: string) => this.DisplayError(sizeElement, message, parentElement!, true)
 
 			if(!value) return CallError(this.requiredFieldMessage)
 
@@ -448,16 +432,16 @@ new class Index {
 
 			if(!valid){
 				CallError("Insira um tamanho válido")
-				return this.ToggleSuccess(parentElement, false)
+				return this.ToggleSuccess(parentElement!, false)
 			}
 
-			const { sizeType } = this.GetSelectedProduct(element)
+			const { sizeType } = this.GetSelectedProduct(element)!
 
 			if(sizeType === "number") valid = validation.number
 			else if(sizeType === "letter") valid = validation.letter
 			else valid = true
 
-			this.ToggleSuccess(parentElement, valid)
+			this.ToggleSuccess(parentElement!, valid)
 
 			if(!valid) CallError("Tamanho inválido para o produto")
 		}
@@ -465,21 +449,21 @@ new class Index {
 		sizeElement.addEventListener("change", ValidateSize.bind(this))
 		element.addEventListener("change", ValidateSize.bind(this))
 	}
-	AddProductListener(){
+	private AddProductListener(){
 		const { addProduct } = this.elements
 		addProduct.addEventListener("click", this.AddProduct.bind(this))
 	}
-	AddProduct(){
+	private AddProduct(){
 		const { products } = this.elements
 
-		const container = /** @type {HTMLDivElement} */ (this.#productClone.cloneNode(true))
-		const element = /** @type {HTMLSelectElement} */ (container.querySelector("#product"))
-		const sizeElement = /** @type {HTMLInputElement} */ (container.querySelector("#productSize"))
-		const quantityElement = /** @type {HTMLInputElement} */ (container.querySelector("#quantity"))
-		const sizesDatalist = container.querySelector("datalist")
+		const container = this.#productClone.cloneNode(true) as HTMLDivElement
+		const element = container.querySelector("#product") as HTMLSelectElement
+		const sizeElement = container.querySelector("#productSize") as HTMLInputElement
+		const quantityElement = container.querySelector("#quantity") as HTMLInputElement
+		const sizesDatalist = container.querySelector("datalist")!
 
-		/** @type {import("../typings/index").ProductElement} */
-		const product = { element, sizeElement, quantityElement, sizesDatalist, container }
+		/** @type {ProductElement} */
+		const product: ProductElement = { element, sizeElement, quantityElement, sizesDatalist, container }
 
 		sizesDatalist.id = `sizes-${this.#productId}`
 		sizeElement.setAttribute("list", `sizes-${this.#productId}`)
@@ -488,13 +472,13 @@ new class Index {
 		this.ChangeSizeDatalist(product)
 		this.ProductListeners(product)
 
-		products.at(-1).container.after(container)
+		products.at(-1)!.container.after(container)
 		products.push(product)
 
 		this.#productId++
 	}
 	/** @param {string | string[]} ceps */
-	ChangeCepPattern(ceps){
+	private ChangeCepPattern(ceps: string|string[]){
 		const { cep } = this.elements
 
 		if(ceps instanceof Array){
@@ -508,7 +492,7 @@ new class Index {
 		}else cep.pattern = ceps.replace(/x/gi, "\\d")
 	}
 	/** @param {ValidityState} validity */
-	IsValid(validity){
+	private IsValid(validity: ValidityState){
 		let valid = true
 
 		for(const key in validity){
@@ -518,29 +502,22 @@ new class Index {
 
 		return valid
 	}
-	/**
-	 * @param {HTMLInputElement} element
-	 * @param {string} [message]
-	 * @param {HTMLElement} [parentElement]
-	 * @param {boolean} [once]
-	 */
-	DisplayError(element, message, parentElement, once = false){
+	private DisplayError(element: HTMLInputElement, message?: string, parentElement?: HTMLElement, once: boolean = false){
 		const that = this
 
 		message ??= this.requiredFieldMessage
-		parentElement ??= element.parentElement
+		parentElement ??= element.parentElement!
 
 		const eventNames = [
 			"input",
 			"change"
-		]
+		] as const
 
-		/** @this {HTMLInputElement} */
-		function Callback(){
+		function Callback(this: typeof element){
 			this.setCustomValidity("")
 			this.removeAttribute("aria-invalid")
 			this.removeAttribute("aria-errormessage")
-			that.RemoveSuccess(parentElement)
+			that.RemoveSuccess(parentElement!)
 			RemoveListeners()
 		}
 
@@ -553,16 +530,16 @@ new class Index {
 		}
 
 		const SetError = () => {
-			const _errorMessage = element.value.trim() ? message : this.requiredFieldMessage
+			const errorMessage = element.value.trim() ? message as string : this.requiredFieldMessage
 			element.setAttribute("aria-invalid", "true")
-			element.setAttribute("aria-errormessage", _errorMessage)
-			element.setCustomValidity(_errorMessage)
-			this.ToggleSuccess(parentElement, false)
+			element.setAttribute("aria-errormessage", errorMessage)
+			element.setCustomValidity(errorMessage)
+			this.ToggleSuccess(parentElement!, false)
 		}
 
-		if(once)
+		if(once){
 			SetError()
-		else{
+		}else{
 			element.setCustomValidity("")
 			element.addEventListener("invalid", () => (SetError(), SetListeners()))
 		}
@@ -571,7 +548,7 @@ new class Index {
 	 * @param {HTMLSelectElement | HTMLDataListElement} element
 	 * @param {{ id: number, name: string } | string | number} data
 	 */
-	AddOption(element, data){
+	private AddOption(element: HTMLSelectElement|HTMLDataListElement, data: { id: number; name: string }|string|number){
 		const option = document.createElement("option")
 
 		if(element instanceof HTMLSelectElement){
@@ -590,10 +567,9 @@ new class Index {
 
 		return option
 	}
-	/** @param {import("../typings/index").ProductElement} productElement */
-	SetSizePattern({ element, sizeElement }){
+	private SetSizePattern({ element, sizeElement }: ProductElement){
 		const { letters, numbers } = this.data.productsSizes
-		const selectedProduct = this.GetSelectedProduct(element)
+		const selectedProduct = this.GetSelectedProduct(element)!
 		const object = selectedProduct.sizeType === "letter" ? letters : numbers
 
 		// sizeElement.pattern =  "^[a-zA-Z]+$" : "^\\d+$"
@@ -602,28 +578,22 @@ new class Index {
 		sizeElement.setCustomValidity("")
 	}
 	/** @param {HTMLSelectElement} product */
-	GetSelectedProduct(product){
+	private GetSelectedProduct(product: HTMLSelectElement){
 		return this.data.products.find(({ id }) => id === Number(product.value))
 	}
-	/**
-	 * @param {import("../typings/index").ProductElement} product
-	 * @param {HTMLDivElement} [parentContainer]
-	 */
-	ChangeProductIds({ element }, parentContainer){
+	private ChangeProductIds({ element }: ProductElement, parentContainer?: HTMLDivElement){
 		const { productsContainer } = this.elements
 		const productsContainers = Array.from(productsContainer.querySelectorAll(".product"))
 
-		parentContainer ??= /** @type {HTMLDivElement} */ (productsContainers.find(container => container.contains(element)))
+		parentContainer ??= productsContainers.find(container => container.contains(element)) as HTMLDivElement
 
 		for(const label of parentContainer.querySelectorAll("label")){
 			const id = label.htmlFor
 			const newId = `${id}-${this.#productId}`
-			const element = parentContainer.querySelector(`#${id}`) // ? label.control doesn't work
+			const element = parentContainer.querySelector<HTMLInputElement>(`#${id}`)!
 
 			element.id = newId
 			label.htmlFor = newId
 		}
 	}
 }
-
-// TODO: Improve Redudancy.js "error" event checking

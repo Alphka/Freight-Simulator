@@ -1,4 +1,5 @@
-/** @type {import("../typings/index").Data} */
+import type { Data } from "../typings/index"
+
 export default {
 	freightPrice: 110,
 	freightMinimumPrice: 23e2,
@@ -156,4 +157,4 @@ export default {
 		}
 	},
 	cubageFactor: 300
-}
+} as Data

@@ -1,0 +1,17 @@
+form{
+	label{
+		overflow: hidden;
+		overflow: clip;
+		text-overflow: ellipsis;
+	}
+
+	input[type=number]{
+		-moz-appearance: textfield;
+
+		&::-webkit-outer-spin-button,
+		&::-webkit-inner-spin-button{
+			-webkit-appearance: none;
+			margin: 0;
+		}
+	}
+}

@@ -1,15 +1,12 @@
+import type { ReplaceElementOptions, Selectors } from "../typings/redundancy"
 import CreateElement from "./helpers/CreateElement.js"
 
 export default class Redundancy {
-	/** @type {{ selector: string, callback: (element: Element) => any }[]} */
-	#listeners = []
+	#listeners: { selector: string, callback: (element: Element) => any }[] = []
 	#listenersEnded = false
+	#emitted = new Set<HTMLElement>
 
-	/** @type {Set<HTMLElement>} */
-	#emitted = new Set
-
-	/** @param {import("../typings/redundancy").Selectors} selectors */
-	constructor(selectors){
+	constructor(private selectors: Selectors){
 		const { styles, scripts } = selectors
 
 		this.selectors = selectors
@@ -20,13 +17,7 @@ export default class Redundancy {
 
 		this.#listenersEnded = true
 	}
-	/**
-	 * @param {string} selector
-	 * @param {string} path
-	 * @param {"style" | "script"} type
-	 * @param {import("../typings/redundancy").ReplaceElementOptions} [options]
-	 */
-	InsertElement(selector, path, type, options){
+	InsertElement(selector: string, path: string, type: "style" | "script", options?: ReplaceElementOptions){
 		this.#on(selector, element => {
 			const replace = type === "style" ? CreateElement("link", {
 				href: path,
@@ -48,22 +39,27 @@ export default class Redundancy {
 	SetListener(){
 		new MutationObserver((mutations, observer) => {
 			for(const mutation of mutations){
-				const elements = new Set(mutation.addedNodes).add(mutation.target)
+				const elements = new Set(mutation.addedNodes).add(mutation.target) as Set<HTMLElement>
 
 				for(const element of elements){
-					if(
-						element instanceof HTMLScriptElement ||
-						element instanceof HTMLLinkElement ||
-						element instanceof HTMLStyleElement
-					) this.#emit(element)
-					else if(element instanceof HTMLHeadElement){
-						const elements = [
-							...document.querySelectorAll("script"),
-							...document.querySelectorAll("style"),
-							...document.querySelectorAll("link")
-						]
+					const tagName = element.tagName?.toLowerCase()
 
-						for(const element of elements) this.#emit(element)
+					switch(tagName){
+						case "script":
+						case "style":
+						case "link":
+							this.#emit(element)
+						break
+						case "head": {
+							const elements = [
+								...document.querySelectorAll("script"),
+								...document.querySelectorAll("style"),
+								...document.querySelectorAll("link")
+							]
+
+							for(const element of elements) this.#emit(element)
+						}
+						break
 					}
 				}
 			}
@@ -74,11 +70,7 @@ export default class Redundancy {
 			subtree: true
 		})
 	}
-	/**
-	 * @param {string} selector
-	 * @param {(element: Element) => any} callback
-	 */
-	#on(selector, callback){
+	#on(selector: string, callback: (element: Element) => any){
 		const element = document.querySelector(selector)
 
 		if(element) element.addEventListener("error", () => {
@@ -90,14 +82,12 @@ export default class Redundancy {
 		})
 		else this.#listeners.push({ selector, callback })
 	}
-	/** @param {HTMLElement} element */
-	#emit(element){
+	#emit(element: HTMLElement){
 		if(this.#emitted.has(element)) return
 
 		this.#emitted.add(element)
 
-		/** @type {Set<number>} */
-		const indexes = new Set
+		const indexes: Set<number> = new Set
 
 		this.#listeners.forEach(({ selector, callback }, index) => {
 			if(element.matches(selector)){

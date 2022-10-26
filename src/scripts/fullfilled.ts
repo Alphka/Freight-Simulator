@@ -1,17 +1,11 @@
-import Redundancy from "./redundancy.js"
-
-new Redundancy({
-	styles: [
-		['[href$="bootstrap.min.css"]', "/public/styles/bootstrap.min.css"]
-	]
-})
-
+import type { Products } from "../typings/fullfilled"
+import type { City } from "../typings/index"
 import ElementsPromises from "./helpers/ElementsPromises.js"
 import CreateElement from "./helpers/CreateElement.js"
 import Data from "./data.js"
 
 /** @param {number} price */
-function Currency(price){
+function Currency(price: number){
 	return (price / 100).toLocaleString("pt-BR", {
 		style: "currency",
 		currency: "BRL"
@@ -19,36 +13,52 @@ function Currency(price){
 }
 
 new class Fullfilled {
-	/** @type {HTMLTableElement} */ addressTable
-	/** @type {HTMLTableElement} */ productsTable
-	/** @type {HTMLTableRowElement} */ product
-	/** @type {import("../typings/fullfilled.js").Products} */ products = new Array
-	productsPrice = 0
+	addressTable!: HTMLTableElement
+	productsTable!: HTMLTableElement
+	product!: HTMLTableRowElement
+	products: Products = new Array
+	selectedCity: City
+	params!: URLSearchParams
+	pricesTable!: HTMLTableElement
+	productsBody!: HTMLTableSectionElement
+	productClone!: HTMLTableRowElement
+	productsPrice: number = 0
+	freightPrice!: number
+	tollPrice!: number
+	cubagePrice!: number
+	insurancePrice!: number
+	distancePrice!: number
 
 	constructor(){
 		this.SetParams()
-		this.selectedCity = this.GetCity()
 
-		ElementsPromises.bodyLoaded.then(() => {
-			this.SetElements()
-			this.SetValues()
-		})
+		const city = this.GetCity()
+
+		if(!city) throw new Error("Invalid city: " + city)
+
+		this.selectedCity = city
+		this.Init()
+	}
+	async Init(){
+		await ElementsPromises.bodyLoaded
+
+		this.SetElements()
+		this.SetValues()
 	}
 	SetParams(){
 		const url = new URL(location.href)
 		this.params = url.searchParams
 	}
 	SetElements(){
-		this.addressTable = /** @type {HTMLTableElement} */ (document.querySelector("table#address"))
-		this.productsTable = /** @type {HTMLTableElement} */ (document.querySelector("table#products"))
-		this.pricesTable = /** @type {HTMLTableElement} */ (document.querySelector("table#prices"))
-		this.product = document.querySelector(".product")
-		this.productsBody = /** @type {HTMLTableSectionElement} */ (this.product.parentElement)
-		this.productClone = /** @type {HTMLTableRowElement} */ (this.product.cloneNode(true))
+		this.addressTable = document.querySelector("table#address") as HTMLTableElement
+		this.productsTable = document.querySelector("table#products") as HTMLTableElement
+		this.pricesTable = document.querySelector("table#prices") as HTMLTableElement
+		this.product = document.querySelector(".product") as HTMLTableRowElement
+		this.productsBody = this.product.parentElement as HTMLTableSectionElement
+		this.productClone = this.product.cloneNode(true) as HTMLTableRowElement
 	}
 	SetValues(){
-		/** @type {NodeListOf<HTMLTableCellElement>} */
-		const cells = this.addressTable.querySelectorAll("[id]")
+		const cells = this.addressTable.querySelectorAll<HTMLTableCellElement>("[id]")
 
 		cells.forEach(element => {
 			const { id } = element
@@ -58,8 +68,7 @@ new class Fullfilled {
 					element.innerText = this.selectedCity.name
 				break
 				default: {
-					/** @type {false | string} */
-					const value = this.params.has(id) && this.params.get(id)
+					const value: false | string = this.params.has(id) && this.params.get(id)!
 					if(value) element.innerText = value
 				}
 				break
@@ -91,10 +100,13 @@ new class Fullfilled {
 			const productSize = sizeParams[i]
 			const quantity = Number(quantityParams[i])
 			const product = this.GetProduct(productId)
+
+			if(!product) throw new Error("Invalid product id: " + productId)
+
 			const price = product.price * quantity
 			const isFirst = i === 0
 
-			const element = isFirst ? this.product : /** @type {HTMLTableRowElement} */ (this.productClone.cloneNode(true))
+			const element = isFirst ? this.product : this.productClone.cloneNode(true) as HTMLTableRowElement
 			const [productElement, sizeElement, quantityElement, priceElement] = element.querySelectorAll("td")
 
 			productElement.innerText = product.name
@@ -110,22 +122,18 @@ new class Fullfilled {
 				quantity
 			}
 
-			if(isFirst)
+			if(isFirst){
 				this.products.push(customProduct)
-			else{
+			}else{
 				const { length } = this.products
 
-				element.querySelector("th").innerText = (length + 1).toString()
+				element.cells.item(0)!.innerText = (length + 1).toString()
 				this.products[length - 1].element.after(element)
 				this.products.push(customProduct)
 			}
 		}
 	}
-	/**
-	 * @param {string} label
-	 * @param {number} price
-	 */
-	AddPrice(label, price){
+	AddPrice(label: string, price: number){
 		const tbody = this.pricesTable.tBodies[0]
 		const row = CreateElement("tr", {
 			children: [
@@ -146,13 +154,13 @@ new class Fullfilled {
 	AddFreight(){
 		const tbody = this.pricesTable.tBodies[0]
 
-		const freightData = /** @type {const} */ ([
+		const freightData = [
 			["Custo por distância", this.distancePrice],
 			["Custo pelo seguro", this.insurancePrice],
 			["Custo pelo pedágio", this.tollPrice],
 			["Cubagem", this.cubagePrice],
 			["Total", this.freightPrice],
-		])
+		] as const
 
 		let label
 		const rows = [
@@ -214,8 +222,7 @@ new class Fullfilled {
 				const { letters, numbers } = Data.productsSizes
 				const size = sizeType === "letter" ? productSize : Number(productSize)
 
-				/** @type {{ width: number, height: number }} */
-				let dimensions
+				let dimensions: { width: number; height: number }
 
 				if(typeof size === "string" && size in letters) dimensions = letters[/** @type {keyof typeof letters} */ (size)]
 				else if(typeof size === "number" && size in numbers) dimensions = numbers[size]
@@ -249,8 +256,7 @@ new class Fullfilled {
 	GetCity(){
 		return Data.cities.find(({ id }) => id === Number(this.params.get("city")))
 	}
-	/** @param {string | number} productId */
-	GetProduct(productId){
+	GetProduct(productId: string | number){
 		return Data.products.find(({ id }) => id === Number(productId))
 	}
 }

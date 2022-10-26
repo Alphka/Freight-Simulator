@@ -1,10 +1,8 @@
-import type IMask from "../public/scripts/imask"
-
 declare global {
-	var IMask: typeof IMask
+	var IMask: any
 
 	interface Window {
-		IMask: typeof IMask
+		IMask: any
 	}
 }
 
@@ -24,7 +22,7 @@ export interface City {
 	}
 	/** Mask to use in imaskjs */
 	imaskConfig?: {
-		mask: string | RegExp | ((value: string) => boolean)
+		mask: string
 		blocks?: {
 			[block: string]: {
 				mask?: any
@@ -115,5 +113,3 @@ export interface ProductElement {
 	quantityElement: HTMLInputElement
 	sizesDatalist: HTMLDataListElement
 }
-
-export type { IMask }

@@ -1,21 +1,23 @@
 {
 	"extends": "../tsconfig",
 	"compilerOptions": {
-		"target": "ES2022",
-		"module": "ES2022",
+		"target": "ESNext",
+		"module": "ESNext",
 		"moduleResolution": "Classic",
 		"allowJs": true,
 		"checkJs": true,
+		"strict": true,
 		"noImplicitAny": false,
-		"strictNullChecks": false,
-		"strictPropertyInitialization": false,
 		"lib": [
-			"ES2022",
+			"ESNext",
 			"DOM",
 			"DOM.Iterable"
 		],
 		"typeRoots": [
 			"typings"
 		]
-	}
+	},
+	"exclude": [
+		"public"
+	]
 }
