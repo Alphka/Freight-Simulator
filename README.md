@@ -64,7 +64,7 @@ The final freight price is the sum of all the previous costs and the minimum ser
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/) and npm. The CI workflow builds the project on Node.js 20.x and 22.x.
+- [Node.js](https://nodejs.org/) and npm, on Node.js `22.23.4`, `24.22.1` or `26.x` (`26.3.0` and `26.12.1` were tested). The CI workflow builds the project on `22.23.4`, `24.22.1` and `26.12.1`.
 - Internet access when opening the site, since Bootstrap, IMask and ViaCEP are loaded from external services.
 
 ## Installation

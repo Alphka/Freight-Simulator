@@ -64,7 +64,7 @@ O preço final do frete é a soma de todos os custos anteriores com o preço mí
 
 ## Requisitos
 
-- [Node.js](https://nodejs.org/) e npm. O workflow de CI compila o projeto com Node.js 20.x e 22.x.
+- [Node.js](https://nodejs.org/) e npm, nas versões Node.js `22.23.4`, `24.22.1` ou `26.x` (`26.3.0` e `26.12.1` foram testadas). O workflow de CI compila o projeto com `22.23.4`, `24.22.1` e `26.12.1`.
 - Acesso à internet ao abrir o site, pois Bootstrap, IMask e ViaCEP são carregados de serviços externos.
 
 ## Instalação
