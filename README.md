@@ -65,7 +65,7 @@ The final freight price is the sum of all the previous costs and the minimum ser
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/) `22.23.4`, `24.22.1` or `26.x` (`26.3.0` and `26.12.1` were tested). The CI workflow builds the project on `22.23.4`, `24.22.1` and `26.12.1`.
+- [Node.js](https://nodejs.org/) `22.23.4`, `24.22.1` or `26.x` (`26.3.0` and `26.12.1` were tested). The CI workflow builds the project on the latest release of Node.js 22, 24 and 26.
 - [pnpm](https://pnpm.io/) `11` or `12`. The exact version is pinned in the `packageManager` field of `package.json`, so it is selected automatically.
 - Internet access when using the CEP lookup, since it calls the ViaCEP API. Bootstrap and IMask are bundled with the site.
 

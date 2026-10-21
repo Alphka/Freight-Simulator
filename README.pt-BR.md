@@ -65,7 +65,7 @@ O preço final do frete é a soma de todos os custos anteriores com o preço mí
 
 ## Requisitos
 
-- [Node.js](https://nodejs.org/) `22.23.4`, `24.22.1` ou `26.x` (`26.3.0` e `26.12.1` foram testadas). O workflow de CI compila o projeto com `22.23.4`, `24.22.1` e `26.12.1`.
+- [Node.js](https://nodejs.org/) `22.23.4`, `24.22.1` ou `26.x` (`26.3.0` e `26.12.1` foram testadas). O workflow de CI compila o projeto com a versão mais recente do Node.js 22, 24 e 26.
 - [pnpm](https://pnpm.io/) `11` ou `12`. A versão exata está fixada no campo `packageManager` do `package.json`, então ela é selecionada automaticamente.
 - Acesso à internet ao usar a consulta de CEP, pois ela chama a API do ViaCEP. Bootstrap e IMask são empacotados junto com o site.
 
