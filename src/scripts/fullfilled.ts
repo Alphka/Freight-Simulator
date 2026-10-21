@@ -1,28 +1,30 @@
 import type { Products } from "../typings/fullfilled"
 import type { City } from "../typings/index"
-import ElementsPromises from "./helpers/ElementsPromises.js"
-import CreateElement from "./helpers/CreateElement.js"
-import Data from "./data.js"
+import requireElement from "./helpers/requireElement"
+import createElement from "./helpers/createElement"
+import Data from "./data"
 
-/** @param {number} price */
-function Currency(price: number){
-	return (price / 100).toLocaleString("pt-BR", {
-		style: "currency",
-		currency: "BRL"
-	}).replace(String.fromCharCode(160), "")
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+	style: "currency",
+	currency: "BRL"
+})
+
+/** @param price Price in cents */
+function formatCurrency(price: number){
+	// Remove the non-breaking space between the symbol and the value
+	return currencyFormatter.format(price / 100).replace(" ", "")
 }
 
-new class Fullfilled {
-	addressTable!: HTMLTableElement
-	productsTable!: HTMLTableElement
-	product!: HTMLTableRowElement
-	products: Products = new Array
+class Fullfilled {
+	addressTable = requireElement<HTMLTableElement>("table#address")
+	productsTable = requireElement<HTMLTableElement>("table#products")
+	pricesTable = requireElement<HTMLTableElement>("table#prices")
+	product = requireElement<HTMLTableRowElement>(".product")
+	productClone = this.product.cloneNode(true) as HTMLTableRowElement
+	products: Products = []
+	params = new URLSearchParams(location.search)
 	selectedCity: City
-	params!: URLSearchParams
-	pricesTable!: HTMLTableElement
-	productsBody!: HTMLTableSectionElement
-	productClone!: HTMLTableRowElement
-	productsPrice: number = 0
+	productsPrice = 0
 	freightPrice!: number
 	tollPrice!: number
 	cubagePrice!: number
@@ -30,78 +32,50 @@ new class Fullfilled {
 	distancePrice!: number
 
 	constructor(){
-		this.SetParams()
+		const cityId = this.params.get("city")
+		const city = this.getCity()
 
-		const city = this.GetCity()
-
-		if(!city) throw new Error("Invalid city: " + city)
+		if(!city) throw new Error(`Invalid city id: ${cityId}`)
 
 		this.selectedCity = city
-		this.Init()
+		this.setValues()
 	}
-	async Init(){
-		await ElementsPromises.bodyLoaded
-
-		this.SetElements()
-		this.SetValues()
-	}
-	SetParams(){
-		const url = new URL(location.href)
-		this.params = url.searchParams
-	}
-	SetElements(){
-		this.addressTable = document.querySelector("table#address") as HTMLTableElement
-		this.productsTable = document.querySelector("table#products") as HTMLTableElement
-		this.pricesTable = document.querySelector("table#prices") as HTMLTableElement
-		this.product = document.querySelector(".product") as HTMLTableRowElement
-		this.productsBody = this.product.parentElement as HTMLTableSectionElement
-		this.productClone = this.product.cloneNode(true) as HTMLTableRowElement
-	}
-	SetValues(){
+	setValues(){
 		const cells = this.addressTable.querySelectorAll<HTMLTableCellElement>("[id]")
 
-		cells.forEach(element => {
+		for(const element of cells){
 			const { id } = element
 
-			switch(id){
-				case "city":
-					element.innerText = this.selectedCity.name
-				break
-				default: {
-					const value: false | string = this.params.has(id) && this.params.get(id)!
-					if(value) element.innerText = value
-				}
-				break
+			if(id === "city") element.textContent = this.selectedCity.name
+			else{
+				const value = this.params.get(id)
+				if(value) element.textContent = value
 			}
-		})
+		}
 
-		this.AddProducts()
-		this.CalculateProductsPrice()
-		this.CalculateFreight()
+		this.addProducts()
+		this.calculateProductsPrice()
+		this.calculateFreight()
 
-		this.AddPrice("Preço dos produtos:", this.productsPrice)
-		this.AddFreight()
-		this.AddPrice("Preço total:", this.productsPrice + this.freightPrice)
+		this.addPrice("Preço dos produtos:", this.productsPrice)
+		this.addFreight()
+		this.addPrice("Preço total:", this.productsPrice + this.freightPrice)
 	}
-	AddProducts(){
+	addProducts(){
 		const productParams = this.params.getAll("product")
 		const sizeParams = this.params.getAll("productSize")
 		const quantityParams = this.params.getAll("quantity")
 
-		// If lengths are not equal
-		if((productParams.length + sizeParams.length + quantityParams.length) / 3 % 1 !== 0){
+		if(productParams.length !== sizeParams.length || productParams.length !== quantityParams.length){
 			throw new Error("Invalid length sizes")
 		}
 
-		const { length } = productParams
-
-		for(let i = 0; i < length; i++){
-			const productId = productParams[i]
+		for(const [i, productId] of productParams.entries()){
 			const productSize = sizeParams[i]
 			const quantity = Number(quantityParams[i])
-			const product = this.GetProduct(productId)
+			const product = this.getProduct(productId)
 
-			if(!product) throw new Error("Invalid product id: " + productId)
+			if(!product) throw new Error(`Invalid product id: ${productId}`)
 
 			const price = product.price * quantity
 			const isFirst = i === 0
@@ -109,102 +83,76 @@ new class Fullfilled {
 			const element = isFirst ? this.product : this.productClone.cloneNode(true) as HTMLTableRowElement
 			const [productElement, sizeElement, quantityElement, priceElement] = element.querySelectorAll("td")
 
-			productElement.innerText = product.name
-			sizeElement.innerText = productSize
-			quantityElement.innerText = quantity.toString()
-			priceElement.innerText = Currency(price)
+			productElement.textContent = product.name
+			sizeElement.textContent = productSize
+			quantityElement.textContent = quantity.toString()
+			priceElement.textContent = formatCurrency(price)
 
-			const customProduct = {
+			if(!isFirst){
+				element.cells.item(0)!.textContent = (this.products.length + 1).toString()
+				this.products.at(-1)!.element.after(element)
+			}
+
+			this.products.push({
 				...product,
 				element,
 				price,
 				productSize,
 				quantity
-			}
-
-			if(isFirst){
-				this.products.push(customProduct)
-			}else{
-				const { length } = this.products
-
-				element.cells.item(0)!.innerText = (length + 1).toString()
-				this.products[length - 1].element.after(element)
-				this.products.push(customProduct)
-			}
+			})
 		}
 	}
-	AddPrice(label: string, price: number){
-		const tbody = this.pricesTable.tBodies[0]
-		const row = CreateElement("tr", {
+	addPrice(label: string, price: number){
+		this.pricesTable.tBodies[0].append(createElement("tr", {
 			children: [
-				CreateElement("th", {
+				createElement("th", {
 					scope: "row",
-					innerText: label
+					textContent: label
 				}),
-				CreateElement("td", {
-					class: "text-right",
+				createElement("td", {
+					class: "text-end",
 					colspan: 2,
-					innerText: Currency(price)
+					textContent: formatCurrency(price)
 				})
 			]
-		})
-
-		tbody.appendChild(row)
+		}))
 	}
-	AddFreight(){
-		const tbody = this.pricesTable.tBodies[0]
-
+	addFreight(){
 		const freightData = [
 			["Custo por distância", this.distancePrice],
 			["Custo pelo seguro", this.insurancePrice],
 			["Custo pelo pedágio", this.tollPrice],
 			["Cubagem", this.cubagePrice],
-			["Total", this.freightPrice],
+			["Total", this.freightPrice]
 		] as const
 
-		let label
-		const rows = [
-			CreateElement("tr", {
-				children: [
-					label = CreateElement("th", {
-						scope: "row",
-						innerText: "Frete"
-					})
-				]
-			})
-		]
+		const rows = freightData.map(([label, price]) => createElement("tr", {
+			children: [
+				createElement("th", {
+					class: "text-end",
+					scope: "row",
+					textContent: `${label}: `
+				}),
+				createElement("td", {
+					class: "text-end",
+					textContent: formatCurrency(price)
+				})
+			]
+		}))
 
-		let firstRowAdded = false
+		// The first row also holds the "Frete" header, which spans every row
+		rows[0].prepend(createElement("th", {
+			scope: "row",
+			rowSpan: rows.length,
+			textContent: "Frete"
+		}))
 
-		for(const [label, price] of freightData){
-			const head = CreateElement("th", {
-				class: "text-right",
-				scope: "row",
-				innerText: label + ": "
-			}), cell = CreateElement("td", {
-				class: "text-right",
-				innerText: Currency(price)
-			})
-
-			if(!firstRowAdded){
-				const row = rows[0]
-				row.appendChild(head)
-				row.appendChild(cell)
-				firstRowAdded = true
-				continue
-			}
-
-			rows.push(CreateElement("tr", { children: [head, cell] }))
-		}
-
-		label.rowSpan = rows.length
-
-		for(const row of rows) tbody.appendChild(row)
+		this.pricesTable.tBodies[0].append(...rows)
 	}
-	CalculateProductsPrice(){
-		for(const { price, quantity } of this.products) this.productsPrice += price
+	calculateProductsPrice(){
+		this.productsPrice = this.products.reduce((total, { price }) => total + price, 0)
 	}
-	CalculateFreight(){
+	calculateFreight(){
 		const { freightPrice, freightMinimumPrice } = Data
 		const { toll, distance } = this.selectedCity
 		const distancePrice = freightPrice * distance / 1000
@@ -213,16 +161,16 @@ new class Fullfilled {
 		let tollPrice = toll?.price ?? 0
 		let servicePrice = freightMinimumPrice
 
-		const GetCubicWeightTax = () => {
+		const getCubicWeightTax = () => {
 			const { pricePerTon, dimensions: { cubicSpace: truckCubicSpace } } = Data.truck
 
 			let cubicSpace = 0, cubicWeight = 0
 
-			this.products.forEach(({ sizeType, quantity, productSize }) => {
+			for(const { sizeType, quantity, productSize } of this.products){
 				const { letters, numbers } = Data.productsSizes
 				const size = sizeType === "letter" ? productSize : Number(productSize)
 
-				let dimensions: { width: number; height: number }
+				let dimensions: { width: number, height: number }
 
 				if(typeof size === "string" && size in letters) dimensions = letters[size as keyof typeof letters]
 				else if(typeof size === "number" && size in numbers) dimensions = numbers[size]
@@ -232,7 +180,7 @@ new class Fullfilled {
 
 				cubicSpace += volume
 				cubicWeight += volume / Data.cubageFactor * quantity
-			})
+			}
 
 			// If it takes more than one truck
 			if(cubicSpace > truckCubicSpace){
@@ -248,15 +196,17 @@ new class Fullfilled {
 		this.distancePrice = distancePrice
 		this.insurancePrice = insurance
 
-		const cubagePrice = this.cubagePrice = GetCubicWeightTax()
+		const cubagePrice = this.cubagePrice = getCubicWeightTax()
 
 		this.tollPrice = tollPrice
 		this.freightPrice = servicePrice + tollPrice + insurance + distancePrice + cubagePrice
 	}
-	GetCity(){
+	getCity(){
 		return Data.cities.find(({ id }) => id === Number(this.params.get("city")))
 	}
-	GetProduct(productId: string | number){
+	getProduct(productId: string | number){
 		return Data.products.find(({ id }) => id === Number(productId))
 	}
 }
+
+new Fullfilled

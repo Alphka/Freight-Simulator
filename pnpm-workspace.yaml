@@ -1,0 +1,5 @@
+allowBuilds:
+  '@parcel/watcher': false
+  core-js-pure: false
+minimumReleaseAge: 0
+verifyDepsBeforeRun: warn

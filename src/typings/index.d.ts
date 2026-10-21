@@ -1,34 +1,23 @@
-declare global {
-	var IMask: any
-
-	interface Window {
-		IMask: any
-	}
-}
-
-type If<T extends boolean, A, B = null> = T extends true ? A : T extends false ? B : A | B
-
-export type ElementsTagNames = "body" | "bodyLoaded" | "head"
 export type LetterSizes = "PP" | "P" | "M" | "G" | "GG" | "XGG"
 export type CepStructure = `${string}-${string}`
 
 export interface City {
 	id: number
-	name: string
 	cep: CepStructure | CepStructure[]
-	distance: number
+	name: string
 	toll?: {
 		price: number
 	}
+	distance: number
 	/** Mask to use in imaskjs */
 	imaskConfig?: {
 		mask: string
 		blocks?: {
 			[block: string]: {
-				mask?: any
-				from?: number
 				to?: number
+				mask?: any
 				enum?: any[]
+				from?: number
 			}
 		}
 	}
@@ -56,11 +45,11 @@ export type Dimensions<T extends boolean = false> = T extends true ? BasicDimens
 } : BasicDimensions
 
 export interface Data {
+	/** Data of the available cities */
+	cities: City[]
 	/** Price in cents per kilometer */
 	freightPrice: number
 	freightMinimumPrice: number
-	/** Data of the available cities */
-	cities: City[]
 	/** Data of the available products for sale */
 	products: Product[]
 	productsSizes: {
@@ -92,24 +81,24 @@ export interface Data {
 }
 
 export interface Elements {
-	form: HTMLFormElement
-	clientName: HTMLInputElement
-	email: HTMLInputElement
-	city: HTMLSelectElement
 	cep: HTMLInputElement
-	district: HTMLInputElement
+	city: HTMLSelectElement
+	form: HTMLFormElement
+	email: HTMLInputElement
 	street: HTMLInputElement
-	houseNumber: HTMLInputElement
-	complement: HTMLInputElement
-	productsContainer: HTMLFieldSetElement
+	district: HTMLInputElement
 	products: ProductElement[]
-	addProduct: HTMLInputElement
+	addProduct: HTMLButtonElement
+	clientName: HTMLInputElement
+	complement: HTMLInputElement
+	houseNumber: HTMLInputElement
+	productsContainer: HTMLFieldSetElement
 }
 
 export interface ProductElement {
-	container: HTMLDivElement
 	element: HTMLSelectElement
+	container: HTMLDivElement
 	sizeElement: HTMLInputElement
-	quantityElement: HTMLInputElement
 	sizesDatalist: HTMLDataListElement
+	quantityElement: HTMLInputElement
 }

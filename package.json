@@ -1,35 +1,27 @@
 {
 	"name": "freight-prototype",
 	"author": "Alphka",
-	"version": "1.0.1",
+	"version": "2.0.0",
 	"description": "Um site para simular um cálculo do preço do frete da empresa Alphka",
+	"license": "ISC",
+	"private": true,
 	"scripts": {
-		"build": "gulp build",
-		"watch": "gulp watch",
-		"typecheck": "tsc -p tsconfig.json && tsc -p src/tsconfig.json --noEmit && tsc -p src/scripts/helpers/tsconfig.json --noEmit"
-	},
-	"keywords": [
-		"Frete",
-		"Senai",
-		"Simulação"
-	],
-	"devDependencies": {
-		"@types/gulp": "^4.0.18",
-		"@types/gulp-sass": "^6.0.0",
-		"@types/gulp-uglify": "^3.0.11",
-		"@types/node": "^26.6.5",
-		"typescript": "^6.0.3"
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"typecheck": "tsc"
 	},
 	"dependencies": {
-		"glob": "^13.0.6",
-		"gulp": "^5.0.1",
-		"gulp-sass": "^6.0.1",
-		"gulp-typescript": "^6.0.0-alpha.1",
-		"gulp-uglify": "^3.0.2",
-		"sass": "^1.106.0"
+		"bootstrap": "^5.3.8",
+		"imask": "^7.6.1"
 	},
-	"allowScripts": {
-		"@parcel/watcher@2.6.0": true
+	"devDependencies": {
+		"@types/node": "^26.6.5",
+		"browserslist": "^4.29.4",
+		"lightningcss": "^1.33.0",
+		"sass": "^1.106.0",
+		"typescript": "^6.0.3",
+		"vite": "^8.3.5"
 	},
 	"repository": {
 		"type": "git",
@@ -39,9 +31,37 @@
 		"url": "https://github.com/Alphka/Freight-Simulator/issues"
 	},
 	"homepage": "https://github.com/Alphka/Freight-Simulator#readme",
-	"license": "ISC",
+	"keywords": [
+		"frete",
+		"freight",
+		"freight-management",
+		"shipping-calculator",
+		"simulator",
+		"senai",
+		"prototype",
+		"static-site",
+		"typescript",
+		"vite",
+		"sass",
+		"bootstrap",
+		"imask"
+	],
+	"browserslist": [
+		"Chrome >= 111",
+		"ChromeAndroid >= 111",
+		"Android >= 111",
+		"Edge >= 111",
+		"Firefox >= 114",
+		"FirefoxAndroid >= 114",
+		"Opera >= 97",
+		"Safari >= 16.4",
+		"iOS >= 16.4",
+		"Samsung >= 22"
+	],
 	"engines": {
-		"node": "^22.23.4 || ^24.22.1 || ^26.3.0"
+		"node": "^22.23.4 || ^24.22.1 || ^26.3.0",
+		"pnpm": ">=11.0.0 <13.0.0"
 	},
-	"type": "commonjs"
+	"packageManager": "pnpm@12.15.0",
+	"type": "module"
 }

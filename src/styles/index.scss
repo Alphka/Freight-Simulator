@@ -1,8 +1,9 @@
 form{
 	label{
 		overflow: hidden;
-		overflow: clip;
 		text-overflow: ellipsis;
+		white-space: nowrap;
+		max-width: 100%;
 	}
 
 	input[type=number]{

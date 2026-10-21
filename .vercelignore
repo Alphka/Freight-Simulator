@@ -1,0 +1,11 @@
+# Files that are not needed to build the site, so they are not uploaded in deploys made with the Vercel CLI.
+# Vercel already ignores .git, node_modules, .vercel, .gitignore, .DS_Store and .env.local by default.
+.github
+.vscode
+.editorconfig
+.gitattributes
+docs
+dist
+.env*
+*.log
+*.md

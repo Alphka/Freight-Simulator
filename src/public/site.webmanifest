@@ -1,6 +1,9 @@
 {
 	"name": "Simulador de Fretes",
-	"start_url": "..",
+	"short_name": "Fretes",
+	"lang": "pt-BR",
+	"start_url": "/",
+	"scope": "/",
 	"icons": [
 		{
 			"src": "images/android-chrome-192x192.png",

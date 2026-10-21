@@ -16,8 +16,8 @@
 <br>
 
 <p align="center">
-	<a href="https://github.com/Alphka/Freight-Simulator/actions/workflows/npm-gulp.yml">
-		<img alt="Build" src="https://img.shields.io/github/actions/workflow/status/Alphka/Freight-Simulator/npm-gulp.yml?branch=main&style=for-the-badge&label=Build">
+	<a href="https://github.com/Alphka/Freight-Simulator/actions/workflows/ci.yml">
+		<img alt="Build" src="https://img.shields.io/github/actions/workflow/status/Alphka/Freight-Simulator/ci.yml?branch=main&style=for-the-badge&label=Build">
 	</a>
 	<a href="LICENSE.md">
 		<img alt="License: ISC" src="https://img.shields.io/badge/License-ISC-5271FF?style=for-the-badge">
@@ -30,11 +30,11 @@ A static website, written in TypeScript, that simulates the freight price of an 
 
 ## How it works
 
-![Screenshot of the order form](https://user-images.githubusercontent.com/71673694/198061750-a6fb2991-6598-4914-ab70-21c77cb31144.png)
+![Screenshot of the order form](docs/screenshot-form.png)
 
 On the home page, the user provides some personal data for identification, the data of the desired products and the destination address of the delivery.
 
-![Screenshot of the freight result page](https://user-images.githubusercontent.com/71673694/198064125-6b2844df-694c-4533-a336-0522d61764c7.png)
+![Screenshot of the freight result page](docs/screenshot-result.png)
 
 After the form is submitted, the site calculates the freight price using the product information, the distance between the origin and the delivery destination, among other data. The form is sent with the `GET` method to `fullfilled.html`, which reads the values from the URL; there is no backend.
 
@@ -57,57 +57,77 @@ The final freight price is the sum of all the previous costs and the minimum ser
 ## Tech stack
 
 - [TypeScript](https://www.typescriptlang.org/) (compiled as ES modules for the browser)
+- [Vite](https://vite.dev/) for the development server and the build (multi-page, with source maps)
 - [Sass](https://sass-lang.com/) for the styles
-- [Gulp](https://gulpjs.com/) for the build (`gulp-typescript`, `gulp-sass` and `gulp-uglify`)
-- [Bootstrap 3.4.1](https://getbootstrap.com/docs/3.4/) (loaded from the jsDelivr CDN)
-- [IMask](https://imask.js.org/) for input masks (loaded from the unpkg CDN)
+- [Bootstrap 5](https://getbootstrap.com/) (only the Sass parts used by the site, bundled by Vite)
+- [IMask](https://imask.js.org/) for input masks (installed from npm and bundled)
+- [pnpm](https://pnpm.io/) as the package manager
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/) and npm, on Node.js `22.23.4`, `24.22.1` or `26.x` (`26.3.0` and `26.12.1` were tested). The CI workflow builds the project on `22.23.4`, `24.22.1` and `26.12.1`.
-- Internet access when opening the site, since Bootstrap, IMask and ViaCEP are loaded from external services.
+- [Node.js](https://nodejs.org/) `22.23.4`, `24.22.1` or `26.x` (`26.3.0` and `26.12.1` were tested). The CI workflow builds the project on `22.23.4`, `24.22.1` and `26.12.1`.
+- [pnpm](https://pnpm.io/) `11` or `12`. The exact version is pinned in the `packageManager` field of `package.json`, so it is selected automatically.
+- Internet access when using the CEP lookup, since it calls the ViaCEP API. Bootstrap and IMask are bundled with the site.
 
 ## Installation
 
 Install the project dependencies:
 
 ```sh
-npm install
+pnpm install
 ```
 
 ## Usage
 
-Build the site into the local `build` folder:
+Start the development server (with hot reload):
 
 ```sh
-npm run build
+pnpm dev
 ```
 
-The `index.html` file will be located in the `build` folder.
+Build the site into the local `dist` folder and preview it:
+
+```sh
+pnpm build
+pnpm preview
+```
 
 > [!NOTE]
-> The file may not work properly when opened directly, because some browsers do not allow running scripts with the `type="module"` attribute from local files. In that case, a server is needed.
->
-> A project to create servers with Node.js: [Alphka/Simple-HTTP-Server](https://github.com/Alphka/Simple-HTTP-Server)
+> The built files use `type="module"` scripts, which browsers do not run from local files (`file://`). Use `pnpm dev` or `pnpm preview`, or any static server.
 
 ### Scripts
 
 | Script | Description |
 | --- | --- |
-| `npm run build` | Builds the pages, public files, scripts and styles into `build` |
-| `npm run watch` | Builds, then rebuilds on changes in `src` (it does not start a server) |
-| `npm run typecheck` | Type-checks the gulpfile and the TypeScript sources without emitting files |
+| `pnpm dev` | Starts the Vite development server |
+| `pnpm build` | Builds the pages, scripts and styles into `dist`, with source maps |
+| `pnpm preview` | Serves the `dist` folder locally |
+| `pnpm typecheck` | Type-checks the Vite configuration and the TypeScript sources without emitting files |
+
+## Browser support
+
+The supported browsers are listed in the `browserslist` field of `package.json` (Chrome and Edge 111+, Firefox 114+, Safari and iOS 16.4+). They match the default `build.target` of Vite, and are also used to prefix and minify the CSS.
+
+## Deployment
+
+The site is static and is deployed on [Vercel](https://vercel.com/). The [`vercel.json`](vercel.json) file sets the Vite framework and the `dist` output directory, so the project settings in the dashboard do not need to be changed. Vercel installs the dependencies with pnpm because of `pnpm-lock.yaml`.
+
+The file also sets long-lived cache headers for the hashed files in `/assets` and security headers, including a Content Security Policy that only allows the site itself and the ViaCEP API. If the site starts to use another external service, add its origin to the matching directive (for example `connect-src`) in `vercel.json`.
 
 ## Project structure
 
 ```text
 src/
-├── pages/      HTML pages (index.html and fullfilled.html)
-├── public/     Images and web manifest
-├── scripts/    TypeScript source (including data.ts with cities, products and prices)
-├── styles/     Sass stylesheets
-└── typings/    Type declarations
-gulpfile.js     Build tasks
+├── public/          Files copied as they are to the root of the build (images and web manifest)
+├── scripts/         TypeScript source (including data.ts with cities, products and prices)
+├── styles/          Sass stylesheets (main.scss imports the Bootstrap parts in use)
+├── typings/         Type declarations
+├── index.html       Order form page
+└── fullfilled.html  Result page
+docs/                Screenshots used in this README
+vite.config.ts       Vite configuration
+tsconfig.json       TypeScript configuration (one project for the sources and the Vite config)
+vercel.json          Vercel configuration
 ```
 
 ## Tests

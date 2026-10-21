@@ -1,3 +1,109 @@
-.vscode
-node_modules
-build
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnp.*
+.yarn/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Vercel
+.vercel/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Caches and temporary files
+.cache/
+.temp/
+.tmp/
+.vite/
+.sass-cache/
+.eslintcache
+.cspellcache
+.stylelintcache
+
+# Tests
+coverage/
+
+# Lockfiles of other package managers (this project uses pnpm)
+package-lock.json
+npm-shrinkwrap.json
+yarn.lock
+bun.lock
+bun.lockb
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.DocumentRevisions-V100
+.TemporaryItems
+
+# Linux
+*~
+.directory
+.fuse_hidden*
+.nfs*
+
+# Visual Studio Code (shared settings can be committed)
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/tasks.json
+*.code-workspace
+
+# JetBrains IDEs (WebStorm, IntelliJ IDEA, etc.)
+.idea/
+*.iml
+*.ipr
+*.iws
+*.ws-jetbrains.log
+
+# Visual Studio
+.vs/
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# Vim, Emacs and other editors
+*.swp
+*.swo
+*.swn
+\#*\#
+.\#*
+.history/
+.fleet/
+.nova/
+.zed/
