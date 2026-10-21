@@ -1,17 +1,14 @@
 {
-	"extends": "../../../tsconfig",
+	"extends": "../../../tsconfig.base",
 	"compilerOptions": {
 		"module": "ESNext",
-		"moduleResolution": "Classic",
-		"noImplicitAny": true,
-		"strictNullChecks": true,
-		"strictPropertyInitialization": true,
+		"moduleResolution": "Bundler",
 		"lib": [
-			"ES2022",
+			"ESNext",
 			"DOM",
 			"DOM.Iterable"
 		],
-		"typeRoots": [],
+		"types": [],
 		"declaration": true,
 		"sourceMap": true
 	}

@@ -5,7 +5,7 @@ import CreateElement from "./helpers/CreateElement.js"
 import Data from "./data.js"
 
 async function InsertIMask(){
-	// * Redirect before loading source-map
+	// Redirect before loading source-map
 	const response = await fetch("https://unpkg.com/imask", {
 		mode: "cors",
 		method: "head",
@@ -497,7 +497,7 @@ new class Index {
 
 		for(const key in validity){
 			if(key === "customError") continue
-			if(!(valid = !validity[key])) break
+			if(!(valid = !validity[key as keyof ValidityState])) break
 		}
 
 		return valid

@@ -96,6 +96,7 @@ The `index.html` file will be located in the `build` folder.
 | --- | --- |
 | `npm run build` | Builds the pages, public files, scripts and styles into `build` |
 | `npm run watch` | Builds, then rebuilds on changes in `src` (it does not start a server) |
+| `npm run typecheck` | Type-checks the gulpfile and the TypeScript sources without emitting files |
 
 ## Project structure
 

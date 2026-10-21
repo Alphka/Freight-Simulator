@@ -1,21 +1,14 @@
 {
-	"extends": "../tsconfig",
+	"extends": "../tsconfig.base",
 	"compilerOptions": {
-		"target": "ESNext",
 		"module": "ESNext",
-		"moduleResolution": "Classic",
-		"allowJs": true,
-		"checkJs": true,
-		"strict": true,
-		"noImplicitAny": false,
+		"moduleResolution": "Bundler",
 		"lib": [
 			"ESNext",
 			"DOM",
 			"DOM.Iterable"
 		],
-		"typeRoots": [
-			"typings"
-		]
+		"types": []
 	},
 	"exclude": [
 		"public"

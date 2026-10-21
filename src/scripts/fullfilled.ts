@@ -224,7 +224,7 @@ new class Fullfilled {
 
 				let dimensions: { width: number; height: number }
 
-				if(typeof size === "string" && size in letters) dimensions = letters[/** @type {keyof typeof letters} */ (size)]
+				if(typeof size === "string" && size in letters) dimensions = letters[size as keyof typeof letters]
 				else if(typeof size === "number" && size in numbers) dimensions = numbers[size]
 				else throw new Error("Invalid size")
 

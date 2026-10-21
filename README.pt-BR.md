@@ -96,6 +96,7 @@ O arquivo `index.html` estará localizado na pasta `build`.
 | --- | --- |
 | `npm run build` | Compila páginas, arquivos públicos, scripts e estilos para `build` |
 | `npm run watch` | Compila e recompila a cada alteração em `src` (não inicia um servidor) |
+| `npm run typecheck` | Verifica os tipos do gulpfile e dos fontes TypeScript sem gerar arquivos |
 
 ## Estrutura do projeto
 

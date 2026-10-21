@@ -1,15 +1,15 @@
 {
+	"extends": "./tsconfig.base",
 	"compilerOptions": {
-		"target": "ESNext",
-		"module": "CommonJS",
-		"moduleResolution": "Node",
-		"strict": true,
+		"module": "NodeNext",
+		"allowJs": true,
+		"checkJs": true,
+		"noEmit": true,
 		"lib": ["ESNext"],
-		"outDir": "build"
+		"types": ["node"]
 	},
-	"exclude": [
-		"node_modules",
-		"build"
+	"include": [
+		"gulpfile.js"
 	],
 	"typeAcquisition": {
 		"enable": true
